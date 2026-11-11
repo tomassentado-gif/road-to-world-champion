@@ -38,12 +38,13 @@
 <section id="page-calendar" class="hidden"><div class="card"><h2>Calendário da época</h2><p class="muted">Circuito júnior · época de 52 semanas</p><div id="calendarList"></div></div></section>
 <section id="page-tournament" class="hidden"><div class="card"><h2>Competição</h2><div id="tournamentPanel"></div></div><div class="card"><h3>Quadro de resultados</h3><div id="draw"></div></div></section>
 <section id="page-player" class="hidden"><div class="card"><h2>Perfil do atleta</h2><div id="profile"></div></div><div class="card"><h3>Desenvolvimento</h3><div id="development"></div></div><div class="card"><h3>Evolução dos atributos</h3><p class="muted">Evolução técnica, física e mental ao longo da carreira.</p><div id="evolutionChart"></div></div></section>
-<section id="page-management" class="hidden"><div class="card"><h2>Gestão da equipa técnica</h2><p class="muted">Contrata profissionais para acelerar a evolução, melhorar a recuperação e gerir a pressão competitiva. Os salários são pagos semanalmente.</p><div class="grid" id="staffOptions"></div></div><div class="card"><h3>Equipa contratada</h3><div id="staffCurrent"></div></div></section>
+<section id="page-management" class="hidden"><div class="card"><h2>Gestão da equipa técnica</h2><p class="muted">Contrata profissionais para acelerar a evolução, melhorar a recuperação e gerir a pressão competitiva. Os salários são pagos semanalmente.</p><div class="grid" id="staffOptions"></div></div><div class="card"><h3>Equipa contratada</h3><div id="staffCurrent"></div></div><div class="card"><h2>Patrocínios</h2><p class="muted">À medida que ganhas resultados e sobes no ranking, marcas podem propor contratos com pagamentos semanais.</p><div id="sponsorPanel"></div><div id="sponsorCurrent"></div></div></section>
 <section id="page-selection" class="hidden"><div class="card"><h2>Seleção nacional</h2><p class="muted">As convocatórias para estágios dependem do ranking, dos resultados e da evolução do atleta.</p><div id="selectionPanel"></div></div><div class="card"><h3>Histórico de convocatórias</h3><div id="selectionHistory"></div></div></section>
 <section id="page-history" class="hidden"><div class="card"><h2>Torneios e resultados</h2><div id="tournamentHistory" class="log"></div></div><div class="card"><h2>Histórico da equipa técnica</h2><div id="staffHistory" class="log"></div></div></section>
 </div></div></section>
 </main>
 <script>
+
 
 
 (() => {
@@ -77,7 +78,7 @@ const staffCatalog=[
 {id:'mind3',role:'Psicólogo desportivo',name:'Dr. Oliver Grant',country:'Reino Unido',quality:3,wage:280,desc:'Psicologia de elite e desempenho sob pressão'}
 ];
 
-function fresh(){return {version:5,name:'',country:'Portugal',hand:'Direita',discipline:'both',age:16,week:1,season:1,energy:100,confidence:50,rank:1200,points:0,cash:3000,prize:0,trained:false,trainingThisWeek:'',stats:{technique:48,footwork:46,speed:48,stamina:47,power:44,mental:48},career:{matches:0,wins:0,titles:0,finals:0},current:null,history:[],tournamentHistory:[],staffHistory:[],statsHistory:[],news:['Contrato de formação assinado. A tua carreira começa agora.'],partner:45,staff:[],pendingCall:null,selectionHistory:[],selectedCamps:0};}
+function fresh(){return {version:5,name:'',country:'Portugal',hand:'Direita',discipline:'both',age:16,week:1,season:1,energy:100,confidence:50,rank:1200,points:0,cash:3000,prize:0,trained:false,trainingThisWeek:'',stats:{technique:48,footwork:46,speed:48,stamina:47,power:44,mental:48},career:{matches:0,wins:0,titles:0,finals:0},current:null,history:[],tournamentHistory:[],staffHistory:[],statsHistory:[],news:['Contrato de formação assinado. A tua carreira começa agora.'],partner:45,staff:[],pendingCall:null,selectionHistory:[],selectedCamps:0,sponsors:[],pendingSponsor:null,lastSponsorOfferWeek:0};}
 let s=null;
 function migrate(x){
  if(!x||typeof x!=='object')return null;
@@ -85,7 +86,7 @@ function migrate(x){
  if(x.current&&x.current.bracketVersion!==2){x.current=null;x.news=(x.news||[]).concat(['O quadro de torneios foi atualizado para um formato de 8 atletas.']);}
  if(!Array.isArray(x.selectionHistory))x.selectionHistory=[];if(x.selectedCamps==null)x.selectedCamps=0;
  if(!x.career)x.career={matches:0,wins:0,titles:0,finals:0};if(!x.stats)x.stats=fresh().stats;
- if(!Array.isArray(x.tournamentHistory))x.tournamentHistory=[];if(!Array.isArray(x.staffHistory))x.staffHistory=[];if(!Array.isArray(x.statsHistory))x.statsHistory=[];
+ if(!Array.isArray(x.tournamentHistory))x.tournamentHistory=[];if(!Array.isArray(x.staffHistory))x.staffHistory=[];if(!Array.isArray(x.statsHistory))x.statsHistory=[];if(!Array.isArray(x.sponsors))x.sponsors=[];if(x.pendingSponsor===undefined)x.pendingSponsor=null;if(x.lastSponsorOfferWeek==null)x.lastSponsorOfferWeek=0;
  if(x.current){if(typeof x.current.matchWins!=='number')x.current.matchWins=0;if(typeof x.current.matchLosses!=='number')x.current.matchLosses=0;}
  x.version=5;if(!x.statsHistory.length)x.statsHistory.push({season:x.season,week:x.week,stats:{...x.stats}});return x;
 }
@@ -98,6 +99,33 @@ function overall(){const a=s.stats;return Math.round((a.technique*1.2+a.footwork
 function month(){return months[Math.min(11,Math.floor((s.week-1)/4.34))];}
 function staffFor(role){return s.staff.find(x=>x.role===role)||null;}
 function wageTotal(){return s.staff.reduce((n,x)=>n+x.wage,0);}
+function sponsorIncome(){return s.sponsors.reduce((n,x)=>n+(x.weekly||0),0);}
+function staffMatchBonus(){const c=staffFor('Treinador principal'),p=staffFor('Preparador físico'),m=staffFor('Psicólogo desportivo');return (c?c.quality*1.15:0)+(p?p.quality*.75:0)+(m?m.quality*.8:0);}
+function maybeSponsorOffer(){
+ if(s.pendingSponsor||s.week-s.lastSponsorOfferWeek<5||s.sponsors.length>=2)return;
+ if(![6,14,22,30,38,46].includes(s.week))return;
+ s.lastSponsorOfferWeek=s.week;
+ const rating=overall(),wins=s.career.wins,rankFactor=Math.max(0,Math.min(1,(1250-s.rank)/1000));
+ const level=Math.max(1,Math.min(3,1+Math.floor((rating-48)/13)+Math.floor(wins/12)));
+ if(rating<48&&wins<2)return;
+ const brands=[['AeroSport','equipamento e material de badminton'],['ShuttlePro','material técnico e volantes'],['CourtLine','vestuário e equipamento desportivo'],['RallyWorks','apoio a jovens atletas'],['FeatherPeak','equipamento de competição']];
+ const brand=brands[Math.floor(Math.random()*brands.length)];
+ const weekly=Math.round((25+level*22+Math.max(0,rating-48)*1.4+rankFactor*45)/5)*5;
+ s.pendingSponsor={id:'sp'+s.season+'-'+s.week+'-'+Math.floor(Math.random()*9999),name:brand[0],type:brand[1],weekly,duration:12,level,bonus:weekly*2};
+ log('Recebeste uma proposta de patrocínio de '+brand[0]+'.');
+}
+function resolveSponsor(accept){
+ const p=s.pendingSponsor;if(!p)return;
+ if(accept){s.sponsors.push({...p,weeksLeft:p.duration});s.cash+=p.bonus;log('Assinaste com '+p.name+'. Recebeste um prémio de assinatura de €'+p.bonus+' e vais receber €'+p.weekly+' por semana durante '+p.duration+' semanas.');}
+ else log('Recusaste a proposta de patrocínio de '+p.name+'.');
+ s.pendingSponsor=null;save();render();
+}
+function renderSponsors(){
+ const p=s.pendingSponsor;
+ $('sponsorPanel').innerHTML=p?'<span class="tag">NOVA PROPOSTA</span><h3>'+p.name+'</h3><p class="muted">Patrocínio de '+p.type+'.</p><div class="row"><span>Pagamento semanal</span><b class="accent">€'+p.weekly+'</b></div><div class="row"><span>Prémio de assinatura</span><b>€'+p.bonus+'</b></div><div class="row"><span>Duração</span><b>'+p.duration+' semanas</b></div><div class="actions"><button class="primary" id="acceptSponsor">Aceitar proposta</button><button id="declineSponsor">Recusar</button></div>':'<p class="muted">Não tens propostas pendentes. Continua a competir para atrair patrocinadores.</p>';
+ $('sponsorCurrent').innerHTML='<h3>Contratos ativos</h3>'+(s.sponsors.length?s.sponsors.map(x=>'<div class="row"><span><b>'+x.name+'</b><br><small class="muted">'+x.type+' · '+x.weeksLeft+' semanas restantes</small></span><b>€'+x.weekly+'/sem.</b></div>').join(''):'<p class="muted">Ainda não tens patrocinadores.</p>')+'<div class="row"><span>Total de patrocínios por semana</span><b class="accent">€'+sponsorIncome()+'</b></div>';
+ const a=$('acceptSponsor'),d=$('declineSponsor');if(a)a.addEventListener('click',()=>resolveSponsor(true));if(d)d.addEventListener('click',()=>resolveSponsor(false));
+}
 function showPage(page){document.querySelectorAll('[id^="page-"]').forEach(x=>x.classList.add('hidden'));const p=$('page-'+page);if(p)p.classList.remove('hidden');document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.page===page));}
 const playerPool=[
 ['Luca Moretti','Itália'],['Ethan Brown','Inglaterra'],['Mikkel Jensen','Dinamarca'],['Riku Tanaka','Japão'],['Noah Martin','França'],['Arjun Patel','Índia'],['Mateo Garcia','Espanha'],['Jonas Berg','Suécia'],['Adam Kowalski','Polónia'],['Oliver Smith','Inglaterra'],['Hugo Dubois','França'],['Felix Müller','Alemanha'],['Min-jun Kim','Coreia do Sul'],['Wei Chen','China'],['Tomas Novak','Chéquia'],['Andrei Popescu','Roménia'],['Tiago Silva','Portugal'],['Daniel Costa','Portugal'],['Oscar Lind','Suécia'],['Leon Fischer','Alemanha'],['Yuto Nakamura','Japão'],['Santiago Ruiz','Espanha'],['Amir Rahman','Malásia'],['Kai Wong','Hong Kong'],['Nikolai Ivanov','Bulgária'],['Lucas Pereira','Brasil'],['Milan Petrovic','Sérvia'],['Theo Laurent','França'],['Benjamin Clark','Inglaterra'],['Søren Madsen','Dinamarca'],['Kacper Zielinski','Polónia'],['Rafael Santos','Brasil'],['Haruto Ito','Japão'],['Alexandre Moreau','França'],['Dimitri Volkov','Ucrânia'],['Gabriel Oliveira','Portugal'],['Pavel Svoboda','Chéquia'],['Isak Andersson','Suécia'],['Jin Park','Coreia do Sul'],['Marco Bianchi','Itália']
@@ -141,7 +169,7 @@ function render(){
  $('seasonTag').textContent='ÉPOCA '+s.season;$('dateTitle').textContent='Semana '+s.week+' · '+month();$('playerLine').textContent=s.name+' · '+s.country+' · '+s.age+' anos · '+(s.discipline==='both'?'Singulares e pares':s.discipline==='singles'?'Singulares':'Pares');
  $('energyText').textContent=s.energy+'%';$('energyBar').style.width=s.energy+'%';$('confidenceText').textContent=s.confidence+'/100';$('confidenceBar').style.width=s.confidence+'%';
  const ev=events.find(e=>e.week===s.week);$('nextEvent').textContent=ev?ev.name:'Semana de preparação';$('nextDesc').textContent=ev?ev.level+' · Categoria '+ev.tier+' · Semana '+ev.week:'Treina, recupera e prepara os próximos desafios.';
- $('advance').disabled=!!(s.current&&!s.current.done)||!!s.pendingCall;
+ $('advance').disabled=!!(s.current&&!s.current.done)||!!s.pendingCall||!!s.pendingSponsor;
  $('overviewStats').innerHTML='<div class="row"><span>Idade</span><b>'+s.age+'</b></div><div class="row"><span>Títulos</span><b>'+s.career.titles+'</b></div><div class="row"><span>Finais</span><b>'+s.career.finals+'</b></div><div class="row"><span>Prémios acumulados</span><b>€'+s.prize.toLocaleString('pt-PT')+'</b></div><div class="row"><span>Salários semanais</span><b>€'+wageTotal()+'</b></div>';
  $('news').innerHTML=s.news.slice(-7).reverse().map(x=>'<p>'+x+'</p>').join('');
  $('trainingOptions').innerHTML=[['technique','Técnica','Técnico'],['footwork','Deslocamento','Técnico'],['speed','Velocidade','Físico'],['stamina','Resistência','Físico'],['power','Potência','Físico'],['mental','Mentalidade','Mental']].map(([k,n,type])=>'<div class="metric"><span class="muted">'+type+'</span><h3>'+n+'</h3><button data-train="'+k+'" '+(s.trained||s.energy<18?'disabled':'')+'>Treinar</button></div>').join('')+'<div class="metric"><span class="muted">Recuperação</span><h3>Descanso</h3><button data-train="rest" '+(s.trained?'disabled':'')+'>Descansar</button></div>';
@@ -153,7 +181,7 @@ function render(){
  $('tournamentHistory').innerHTML=s.tournamentHistory.length?s.tournamentHistory.map(x=>'<div class="row"><span><b>'+x.event+'</b><br><small class="muted">Época '+x.season+' · Semana '+x.week+' · '+x.wins+' vitórias / '+x.losses+' derrotas</small></span><b>'+x.place+'</b></div>').join(''):'Ainda não disputaste torneios.';
  $('staffHistory').innerHTML=s.staffHistory.length?s.staffHistory.map(x=>'<div class="row"><span><b>'+x.action+': '+x.name+'</b><br><small class="muted">'+x.role+' · '+x.country+'</small></span><small class="muted">Época '+x.season+' · Sem. '+x.week+'</small></div>').join(''):'Ainda não existem alterações à equipa técnica.';
  renderEvolution();
- renderStaff();renderSelection();
+ renderStaff();renderSelection();renderSponsors();
 }
 function renderEvolution(){
  const keys=Object.keys(attrs),colors=['#4da3ff','#35d0a0','#f4bd50','#bb8af7','#ff8c69','#e879b9'];
@@ -167,17 +195,25 @@ function renderEvolution(){
  svg+='<div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:8px">'+keys.map((k,i)=>'<span style="font-size:12px;color:'+colors[i]+'">● '+attrs[k]+'</span>').join('')+'</div>';
  $('evolutionChart').innerHTML=svg;
 }
+function generateGameScore(playerWon){
+ const winner=21+Math.floor(Math.random()*7)+(Math.random()<.12?2:0);
+ const capped=Math.min(30,winner);
+ const loserMax=capped===30?29:capped-2;
+ const loserMin=Math.max(0,loserMax-7);
+ const loser=loserMin+Math.floor(Math.random()*(loserMax-loserMin+1));
+ return playerWon?capped+'-'+loser:loser+'-'+capped;
+}
 function playMatch(){
  const t=s.current;if(!t||t.done)return;const opp=t.opponents[t.round];if(!opp)return;
  const form=overall()+(s.energy-70)*.12+(s.confidence-50)*.08+(s.stats.mental-50)*.1;
- const own=form+(t.discipline==='Pares'?(s.partner-50)*.35:0),won=Math.random()<1/(1+Math.exp(-(own-opp.rating)/13));
+ const own=form+staffMatchBonus()+(t.discipline==='Pares'?(s.partner-50)*.35:0);
+ const won=Math.random()<1/(1+Math.exp(-(own-opp.rating)/13));
  const playerSets=won?2:(Math.random()<.48?1:0),opponentSets=won?(Math.random()<.48?1:0):2;
  let pw=0,ow=0;const sets=[];
  while(pw<playerSets||ow<opponentSets){
-  const playerWinsSet=pw<playerSets&&(ow>=opponentSets||Math.random()<(playerSets-pw)/(playerSets-pw+opponentSets-ow));
-  let a,b;if(playerWinsSet){a=21+Math.floor(Math.random()*6);b=Math.max(0,a-2-Math.floor(Math.random()*7));pw++;}
-  else{b=21+Math.floor(Math.random()*6);a=Math.max(0,b-2-Math.floor(Math.random()*7));ow++;}
-  sets.push(a+'-'+b);
+  const playerWonSet=pw<playerSets&&(ow>=opponentSets||Math.random()<.5);
+  sets.push(generateGameScore(playerWonSet));
+  if(playerWonSet)pw++;else ow++;
  }
  const score=sets.join(', ');s.career.matches++;
  if(won){s.career.wins++;s.points+=t.tier*8;s.rank=Math.max(1,s.rank-t.tier*2);t.matchWins++;}
@@ -189,18 +225,19 @@ function playMatch(){
  else{t.done=true;s.points+=t.tier*12;payTournamentPrize(t,round);finishTournament(t,false);}
  save();render();
 }
+
 function startCareer(){try{s=fresh();s.name=$('pname').value.trim()||'Alex Silva';s.country=$('country').value;s.discipline=$('discipline').value;s.hand=$('hand').value;log('A carreira começou. O teu primeiro objetivo é entrar no top 500 júnior.');snapshotStats();save();render();}catch(e){console.error(e);alert('Não foi possível iniciar a carreira: '+e.message);}}
-function train(e){const k=e.target.dataset.train;if(!k||s.trained)return;if(k==='rest'){s.energy=Math.min(100,s.energy+30);s.confidence=Math.min(100,s.confidence+2);s.trainingThisWeek='Descanso';log('Semana dedicada à recuperação.');}else{if(s.energy<18)return;let gain=s.energy>65?2:1;const coach=staffFor('Treinador principal'),physical=staffFor('Preparador físico');if(['technique','footwork','mental'].includes(k)&&coach)gain+=coach.quality;if(['speed','stamina','power'].includes(k)&&physical)gain+=physical.quality;s.stats[k]=Math.min(99,s.stats[k]+gain);s.energy=Math.max(0,s.energy-18);s.trainingThisWeek=attrs[k];log('Sessão de '+attrs[k].toLowerCase()+': evolução de +'+gain+' pontos.');}s.trained=true;snapshotStats();save();render();}
+function train(e){const k=e.target.dataset.train;if(!k||s.trained)return;if(k==='rest'){s.energy=Math.min(100,s.energy+30);s.confidence=Math.min(100,s.confidence+2);s.trainingThisWeek='Descanso';log('Semana dedicada à recuperação.');}else{if(s.energy<18)return;let gain=s.energy>65?2:1;const coach=staffFor('Treinador principal'),physical=staffFor('Preparador físico');if(['technique','footwork'].includes(k)&&coach)gain+=coach.quality;if(['speed','stamina','power'].includes(k)&&physical)gain+=physical.quality;if(k==='mental'){const psychologist=staffFor('Psicólogo desportivo');if(psychologist)gain+=psychologist.quality;}s.stats[k]=Math.min(99,s.stats[k]+gain);s.energy=Math.max(0,s.energy-18);s.trainingThisWeek=attrs[k];log('Sessão de '+attrs[k].toLowerCase()+': evolução de +'+gain+' pontos.');}s.trained=true;snapshotStats();save();render();}
 function hire(e){const role=e.target.dataset.fire;if(role){const old=staffFor(role);if(old){staffEvent('Saída',old);s.staff=s.staff.filter(x=>x.role!==role);log('Dispensaste '+old.name+'.');save();render();}return;}const id=e.target.dataset.staff;if(!id)return;const p=staffCatalog.find(x=>x.id===id);if(!p||s.cash<p.wage)return;const existing=staffFor(p.role);if(existing&&existing.id===id)return;if(existing){staffEvent('Substituição',p);staffEvent('Saída',existing);}else staffEvent('Contratação',p);s.cash-=p.wage;s.staff=s.staff.filter(x=>x.role!==p.role);s.staff.push({...p});log((existing?'Substituíste '+existing.name+' por ':'Contrataste ')+p.name+'. A primeira semana de salário ficou paga (€'+p.wage+').');save();render();}
 function advance(){
  if(s.current&&!s.current.done||s.pendingCall)return;
  s.week++;if(s.week>52){s.week=1;s.season++;s.age++;log('Nova época! Entraste no teu ano de idade '+s.age+'.');}
- s.energy=Math.min(100,s.energy+22+(staffFor('Fisioterapeuta')?staffFor('Fisioterapeuta').quality*5:0));
- s.confidence=Math.max(20,Math.min(100,s.confidence+1+(staffFor('Psicólogo desportivo')?staffFor('Psicólogo desportivo').quality:0)));
+ s.energy=Math.min(100,s.energy+22+(staffFor('Fisioterapeuta')?staffFor('Fisioterapeuta').quality*5:0)+(staffFor('Preparador físico')?staffFor('Preparador físico').quality*3:0));
+ s.confidence=Math.max(20,Math.min(100,s.confidence+1+(staffFor('Psicólogo desportivo')?staffFor('Psicólogo desportivo').quality*2:0)));
  s.trained=false;s.trainingThisWeek='';s.current=null;
- const wage=wageTotal();if(wage){s.cash-=wage;log('Pagamento semanal da equipa técnica: -€'+wage+'.');if(s.cash<0)log('Atenção: orçamento negativo. Considera substituir ou dispensar profissionais.');}
+ const wage=wageTotal();if(wage){s.cash-=wage;log('Pagamento semanal da equipa técnica: -€'+wage+'.');}const sponsorPay=sponsorIncome();if(sponsorPay){s.cash+=sponsorPay;log('Pagamentos semanais dos patrocinadores: +€'+sponsorPay+'.');}s.sponsors=s.sponsors.map(x=>({...x,weeksLeft:x.weeksLeft-1})).filter(x=>{if(x.weeksLeft<=0){log('O contrato com '+x.name+' terminou.');return false;}return true;});if(s.cash<0)log('Atenção: orçamento negativo. Considera rever os salários da equipa técnica.');
  if(s.campActive){s.stats.mental=Math.min(99,s.stats.mental+2);s.stats.technique=Math.min(99,s.stats.technique+1);s.confidence=Math.min(100,s.confidence+8);s.energy=Math.max(20,s.energy-12);s.campActive=false;log('Concluíste o estágio da seleção: evolução técnica e mental registada.');}
- const ev=events.find(x=>x.week===s.week);if(ev)makeTournament(ev);maybeCallUp();snapshotStats();log('Semana de preparação concluída.');save();render();
+ const ev=events.find(x=>x.week===s.week);if(ev)makeTournament(ev);maybeCallUp();maybeSponsorOffer();snapshotStats();log('Semana de preparação concluída.');save();render();
 }
 function init(){
  $('start').addEventListener('click',startCareer);document.querySelectorAll('.nav').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
@@ -211,5 +248,6 @@ function init(){
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
+
 
 </script></body></html>
