@@ -79,14 +79,14 @@ const staffCatalog=[
 {id:'mind3',role:'Psicólogo desportivo',name:'Dr. Oliver Grant',country:'Reino Unido',quality:3,wage:280,desc:'Psicologia de elite e desempenho sob pressão'}
 ];
 
-function fresh(){return {version:5,name:'',country:'Portugal',hand:'Direita',discipline:'both',age:16,week:1,season:1,energy:100,confidence:50,rank:1200,points:0,cash:3000,prize:0,trained:false,trainingThisWeek:'',stats:{technique:48,footwork:46,speed:48,stamina:47,power:44,mental:48},career:{matches:0,wins:0,titles:0,finals:0},current:null,history:[],tournamentHistory:[],staffHistory:[],statsHistory:[],news:['Contrato de formação assinado. A tua carreira começa agora.'],partner:45,staff:[],pendingCall:null,selectionHistory:[],selectedCamps:0,sponsors:[],pendingSponsor:null,lastSponsorOfferWeek:0,annualStart:null,annualRecords:{mostWins:0,mostTitles:0,bestOverall:0,bestRank:1200},annualReviews:[],pendingAnnualReview:null};}
+function fresh(){return {version:5,name:'',country:'Portugal',hand:'Direita',discipline:'both',age:16,week:1,season:1,energy:100,confidence:50,rank:1200,points:0,cash:3000,prize:0,trained:false,trainingThisWeek:'',stats:{technique:48,footwork:46,speed:48,stamina:47,power:44,mental:48},trainingProgress:{technique:0,footwork:0,speed:0,stamina:0,power:0,mental:0},career:{matches:0,wins:0,titles:0,finals:0},current:null,history:[],tournamentHistory:[],staffHistory:[],statsHistory:[],news:['Contrato de formação assinado. A tua carreira começa agora.'],partner:45,staff:[],pendingCall:null,selectionHistory:[],selectedCamps:0,sponsors:[],pendingSponsor:null,lastSponsorOfferWeek:0,annualStart:null,annualRecords:{mostWins:0,mostTitles:0,bestOverall:0,bestRank:1200},annualReviews:[],pendingAnnualReview:null};}
 let s=null;
 function migrate(x){
  if(!x||typeof x!=='object')return null;
  if(x.cash==null)x.cash=3000;if(!Array.isArray(x.staff))x.staff=[];if(!x.pendingCall)x.pendingCall=null;
  if(x.current&&x.current.bracketVersion!==2){x.current=null;x.news=(x.news||[]).concat(['O quadro de torneios foi atualizado para um formato de 8 atletas.']);}
  if(!Array.isArray(x.selectionHistory))x.selectionHistory=[];if(x.selectedCamps==null)x.selectedCamps=0;
- if(!x.career)x.career={matches:0,wins:0,titles:0,finals:0};if(!x.stats)x.stats=fresh().stats;
+ if(!x.career)x.career={matches:0,wins:0,titles:0,finals:0};if(!x.stats)x.stats=fresh().stats;if(!x.trainingProgress)x.trainingProgress={technique:0,footwork:0,speed:0,stamina:0,power:0,mental:0};else for(const k of Object.keys(attrs))if(typeof x.trainingProgress[k]!=='number')x.trainingProgress[k]=0;
  if(!Array.isArray(x.tournamentHistory))x.tournamentHistory=[];if(!Array.isArray(x.staffHistory))x.staffHistory=[];if(!Array.isArray(x.statsHistory))x.statsHistory=[];if(!Array.isArray(x.sponsors))x.sponsors=[];if(x.pendingSponsor===undefined)x.pendingSponsor=null;if(x.lastSponsorOfferWeek==null)x.lastSponsorOfferWeek=0;if(!x.annualRecords)x.annualRecords={mostWins:0,mostTitles:0,bestOverall:0,bestRank:1200};if(!Array.isArray(x.annualReviews))x.annualReviews=[];if(x.pendingAnnualReview===undefined)x.pendingAnnualReview=null;if(!x.annualStart)x.annualStart={matches:x.career.matches||0,wins:x.career.wins||0,titles:x.career.titles||0,finals:x.career.finals||0,rank:x.rank||1200,overall:overallSafe(x.stats),stats:{...x.stats}};
  if(x.current){if(typeof x.current.matchWins!=='number')x.current.matchWins=0;if(typeof x.current.matchLosses!=='number')x.current.matchLosses=0;}
  x.version=5;if(!x.statsHistory.length)x.statsHistory.push({season:x.season,week:x.week,stats:{...x.stats}});return x;
@@ -97,6 +97,15 @@ function snapshotStats(){if(!Array.isArray(s.statsHistory))s.statsHistory=[];con
 function staffEvent(action,p){s.staffHistory.unshift({season:s.season,week:s.week,action,name:p.name,role:p.role,country:p.country||''});}
 function finishTournament(t,won){if(t.logged)return;t.logged=true;const place=won?'Campeão':t.round===2?'Finalista':t.round===1?'Meias-finais':'Quartos de final';s.tournamentHistory.unshift({season:s.season,week:s.week,event:t.event,place,wins:t.matchWins||0,losses:t.matchLosses||0});if(won)s.career.titles++;}
 function overall(){const a=s.stats;return Math.round((a.technique*1.2+a.footwork+a.speed+a.stamina+a.power+a.mental*1.1)/6.3);}
+function developAttribute(key,baseGain){
+ const value=s.stats[key]||0;
+ const multiplier=value<55?1.2:value<70?1:value<80?.75:value<90?.48:.28;
+ const progress=(s.trainingProgress[key]||0)+baseGain*multiplier;
+ const whole=Math.floor(progress);
+ s.trainingProgress[key]=progress-whole;
+ if(whole>0)s.stats[key]=Math.min(99,value+whole);
+ return {progress:baseGain*multiplier,gained:Math.min(whole,99-value)};
+}
 function overallSafe(a){return Math.round((a.technique*1.2+a.footwork+a.speed+a.stamina+a.power+a.mental*1.1)/6.3);}
 function finishSeasonReview(){
  const b=s.annualStart||{matches:0,wins:0,titles:0,finals:0,rank:s.rank,overall:overall(),stats:{...s.stats}};
@@ -273,7 +282,7 @@ function playMatch(){
 }
 
 function startCareer(){try{s=fresh();s.name=$('pname').value.trim()||'Alex Silva';s.country=$('country').value;s.discipline=$('discipline').value;s.hand=$('hand').value;log('A carreira começou. O teu primeiro objetivo é entrar no top 500 júnior.');s.annualStart={matches:0,wins:0,titles:0,finals:0,rank:s.rank,overall:overall(),stats:{...s.stats}};snapshotStats();save();render();}catch(e){console.error(e);alert('Não foi possível iniciar a carreira: '+e.message);}}
-function train(e){const k=e.target.dataset.train;if(!k||s.trained)return;if(k==='rest'){s.energy=Math.min(100,s.energy+30);s.confidence=Math.min(100,s.confidence+2);s.trainingThisWeek='Descanso';log('Semana dedicada à recuperação.');}else{if(s.energy<18)return;let gain=s.energy>65?2:1;const coach=staffFor('Treinador principal'),physical=staffFor('Preparador físico');if(['technique','footwork'].includes(k)&&coach)gain+=coach.quality;if(['speed','stamina','power'].includes(k)&&physical)gain+=physical.quality;if(k==='mental'){const psychologist=staffFor('Psicólogo desportivo');if(psychologist)gain+=psychologist.quality;}s.stats[k]=Math.min(99,s.stats[k]+gain);s.energy=Math.max(0,s.energy-18);s.trainingThisWeek=attrs[k];log('Sessão de '+attrs[k].toLowerCase()+': evolução de +'+gain+' pontos.');}s.trained=true;snapshotStats();save();render();}
+function train(e){const k=e.target.dataset.train;if(!k||s.trained)return;if(k==='rest'){s.energy=Math.min(100,s.energy+30);s.confidence=Math.min(100,s.confidence+2);s.trainingThisWeek='Descanso';log('Semana dedicada à recuperação.');}else{if(s.energy<18)return;let gain=s.energy>65?.55:.4;const coach=staffFor('Treinador principal'),physical=staffFor('Preparador físico');if(['technique','footwork'].includes(k)&&coach)gain+=coach.quality*.03;if(['speed','stamina','power'].includes(k)&&physical)gain+=physical.quality*.03;if(k==='mental'){const psychologist=staffFor('Psicólogo desportivo');if(psychologist)gain+=psychologist.quality*.03;}const result=developAttribute(k,gain);s.energy=Math.max(0,s.energy-18);s.trainingThisWeek=attrs[k];log('Sessão de '+attrs[k].toLowerCase()+': progresso de '+Math.round(result.progress*100)+'%'+(result.gained?' · +'+result.gained+' ponto(s)':' · a acumular evolução')+'.');}s.trained=true;snapshotStats();save();render();}
 function hire(e){const role=e.target.dataset.fire;if(role){const old=staffFor(role);if(old){staffEvent('Saída',old);s.staff=s.staff.filter(x=>x.role!==role);log('Dispensaste '+old.name+'.');save();render();}return;}const id=e.target.dataset.staff;if(!id)return;const p=staffCatalog.find(x=>x.id===id);if(!p||s.cash<p.wage)return;const existing=staffFor(p.role);if(existing&&existing.id===id)return;if(existing){staffEvent('Substituição',p);staffEvent('Saída',existing);}else staffEvent('Contratação',p);s.cash-=p.wage;s.staff=s.staff.filter(x=>x.role!==p.role);s.staff.push({...p});log((existing?'Substituíste '+existing.name+' por ':'Contrataste ')+p.name+'. A primeira semana de salário ficou paga (€'+p.wage+').');save();render();}
 function advance(){
  if(s.current&&!s.current.done||s.pendingCall)return;
@@ -282,7 +291,7 @@ function advance(){
  s.confidence=Math.max(20,Math.min(100,s.confidence+1+(staffFor('Psicólogo desportivo')?staffFor('Psicólogo desportivo').quality*2:0)));
  s.trained=false;s.trainingThisWeek='';s.current=null;
  const wage=wageTotal();if(wage){s.cash-=wage;log('Pagamento semanal da equipa técnica: -€'+wage+'.');}const sponsorPay=sponsorIncome();if(sponsorPay){s.cash+=sponsorPay;log('Pagamentos semanais dos patrocinadores: +€'+sponsorPay+'.');}s.sponsors=s.sponsors.map(x=>({...x,weeksLeft:x.weeksLeft-1})).filter(x=>{if(x.weeksLeft<=0){log('O contrato com '+x.name+' terminou.');return false;}return true;});if(s.cash<0)log('Atenção: orçamento negativo. Considera rever os salários da equipa técnica.');
- if(s.campActive){s.stats.mental=Math.min(99,s.stats.mental+2);s.stats.technique=Math.min(99,s.stats.technique+1);s.confidence=Math.min(100,s.confidence+8);s.energy=Math.max(20,s.energy-12);s.campActive=false;log('Concluíste o estágio da seleção: evolução técnica e mental registada.');}
+ if(s.campActive){developAttribute('mental',.7);developAttribute('technique',.45);s.confidence=Math.min(100,s.confidence+8);s.energy=Math.max(20,s.energy-12);s.campActive=false;log('Concluíste o estágio da seleção: evolução técnica e mental gradual registada.');}
  const ev=events.find(x=>x.week===s.week);if(ev)makeTournament(ev);maybeCallUp();maybeSponsorOffer();snapshotStats();log('Semana de preparação concluída.');save();render();
 }
 function init(){
