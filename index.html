@@ -156,11 +156,21 @@ const playerPool=[
 ['Luca Moretti','Itália'],['Ethan Brown','Inglaterra'],['Mikkel Jensen','Dinamarca'],['Riku Tanaka','Japão'],['Noah Martin','França'],['Arjun Patel','Índia'],['Mateo Garcia','Espanha'],['Jonas Berg','Suécia'],['Adam Kowalski','Polónia'],['Oliver Smith','Inglaterra'],['Hugo Dubois','França'],['Felix Müller','Alemanha'],['Min-jun Kim','Coreia do Sul'],['Wei Chen','China'],['Tomas Novak','Chéquia'],['Andrei Popescu','Roménia'],['Tiago Silva','Portugal'],['Daniel Costa','Portugal'],['Oscar Lind','Suécia'],['Leon Fischer','Alemanha'],['Yuto Nakamura','Japão'],['Santiago Ruiz','Espanha'],['Amir Rahman','Malásia'],['Kai Wong','Hong Kong'],['Nikolai Ivanov','Bulgária'],['Lucas Pereira','Brasil'],['Milan Petrovic','Sérvia'],['Theo Laurent','França'],['Benjamin Clark','Inglaterra'],['Søren Madsen','Dinamarca'],['Kacper Zielinski','Polónia'],['Rafael Santos','Brasil'],['Haruto Ito','Japão'],['Alexandre Moreau','França'],['Dimitri Volkov','Ucrânia'],['Gabriel Oliveira','Portugal'],['Pavel Svoboda','Chéquia'],['Isak Andersson','Suécia'],['Jin Park','Coreia do Sul'],['Marco Bianchi','Itália']
 ];
 function makeTournament(e){
- const base=42+e.tier*7+Math.floor(Math.random()*9);
- const pool=[...playerPool].sort(()=>Math.random()-.5);
- const opponents=pool.slice(0,3).map(([name,country])=>({name,country,rating:Math.max(35,base+Math.floor(Math.random()*19)-9),result:null,score:null}));
+ // A dificuldade acompanha o nível competitivo, independentemente do tier antigo do calendário.
+ const ranges={Regional:[37,48],Nacional:[53,65],Internacional:[65,78],Continental:[74,86],Mundial:[80,92]};
+ const [minRating,maxRating]=ranges[e.level]||[48,62];
+ let pool=[...playerPool];
+ // Nos campeonatos nacionais só podem surgir atletas da nacionalidade escolhida na criação da carreira.
+ if(e.level==='Nacional'){
+  pool=pool.filter(([,country])=>country===s.country);
+  const fallbackNames=['João Martins','Pedro Ferreira','Miguel Costa','André Santos','Diogo Lopes','Rafael Almeida'];
+  let n=0;
+  while(pool.length<3){pool.push([fallbackNames[n%fallbackNames.length]+' '+(n+1),s.country]);n++;}
+ }
+ pool.sort(()=>Math.random()-.5);
+ const opponents=pool.slice(0,3).map(([name,country])=>({name,country,rating:minRating+Math.floor(Math.random()*(maxRating-minRating+1)),result:null,score:null}));
  s.current={event:e.name,level:e.level,tier:e.tier,prize:e.prize,round:0,opponents,done:false,won:false,paid:false,bracketVersion:2,matchWins:0,matchLosses:0,logged:false,discipline:s.discipline==='doubles'?'Pares':'Singulares'};
- log('Chegaste ao torneio '+e.name+'. Sorteio realizado: quadro de 8 atletas, com adversários diferentes em cada ronda.');
+ log('Chegaste ao torneio '+e.name+'. Sorteio realizado: quadro de 8 atletas, com adversários diferentes em cada ronda'+(e.level==='Nacional'?' e apenas atletas de '+s.country+'.':'.'));
 }
 
 function payTournamentPrize(t,roundWon){if(t.paid)return;let factor=0;if(t.won)factor=1;else if(roundWon>=4)factor=.55;else if(roundWon>=3)factor=.25;else if(roundWon>=2)factor=.12;else if(roundWon>=1)factor=.05;let amount=Math.round((t.prize||0)*factor);if(s.age>=18&&amount===0){const adultBase={1:100,2:400,3:1400,4:6000,5:18000};amount=Math.round((adultBase[t.tier]||0)*factor);}if(amount>0){s.cash+=amount;s.prize+=amount;log('Prémio monetário: +€'+amount.toLocaleString('pt-PT')+'.');}t.paid=true;}
