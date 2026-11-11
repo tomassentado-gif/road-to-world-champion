@@ -29,7 +29,7 @@
 </aside>
 <div class="content">
 <section id="page-overview">
-<div class="card"><div class="row"><div><span class="tag" id="seasonTag">ÉPOCA 1</span><h2 id="dateTitle">Semana 1 · Janeiro</h2><div class="muted" id="playerLine"></div></div><button class="primary" id="advance">Avançar semana →</button></div><div class="two" style="margin-top:14px"><div><div class="muted">Próximo compromisso</div><h3 id="nextEvent">—</h3><div class="muted" id="nextDesc"></div></div><div><div class="muted">Estado físico</div><div class="row"><span>Energia</span><b id="energyText">100%</b></div><div class="bar"><i id="energyBar" style="width:100%"></i></div><div class="row"><span>Confiança</span><b id="confidenceText">50/100</b></div><div class="bar"><i id="confidenceBar" style="width:50%"></i></div></div></div></div>
+<div id="annualReview" class="card hidden"></div><div class="card"><div class="row"><div><span class="tag" id="seasonTag">ÉPOCA 1</span><h2 id="dateTitle">Semana 1 · Janeiro</h2><div class="muted" id="playerLine"></div></div><button class="primary" id="advance">Avançar semana →</button></div><div class="two" style="margin-top:14px"><div><div class="muted">Próximo compromisso</div><h3 id="nextEvent">—</h3><div class="muted" id="nextDesc"></div></div><div><div class="muted">Estado físico</div><div class="row"><span>Energia</span><b id="energyText">100%</b></div><div class="bar"><i id="energyBar" style="width:100%"></i></div><div class="row"><span>Confiança</span><b id="confidenceText">50/100</b></div><div class="bar"><i id="confidenceBar" style="width:50%"></i></div></div></div></div>
 <div class="two"><div class="card"><h3>Resumo da carreira</h3><div id="overviewStats"></div></div><div class="card"><h3>Últimas notícias</h3><div id="news" class="log"></div></div></div>
 </section>
 <section id="page-training" class="hidden">
@@ -79,7 +79,7 @@ const staffCatalog=[
 {id:'mind3',role:'Psicólogo desportivo',name:'Dr. Oliver Grant',country:'Reino Unido',quality:3,wage:280,desc:'Psicologia de elite e desempenho sob pressão'}
 ];
 
-function fresh(){return {version:5,name:'',country:'Portugal',hand:'Direita',discipline:'both',age:16,week:1,season:1,energy:100,confidence:50,rank:1200,points:0,cash:3000,prize:0,trained:false,trainingThisWeek:'',stats:{technique:48,footwork:46,speed:48,stamina:47,power:44,mental:48},career:{matches:0,wins:0,titles:0,finals:0},current:null,history:[],tournamentHistory:[],staffHistory:[],statsHistory:[],news:['Contrato de formação assinado. A tua carreira começa agora.'],partner:45,staff:[],pendingCall:null,selectionHistory:[],selectedCamps:0,sponsors:[],pendingSponsor:null,lastSponsorOfferWeek:0};}
+function fresh(){return {version:5,name:'',country:'Portugal',hand:'Direita',discipline:'both',age:16,week:1,season:1,energy:100,confidence:50,rank:1200,points:0,cash:3000,prize:0,trained:false,trainingThisWeek:'',stats:{technique:48,footwork:46,speed:48,stamina:47,power:44,mental:48},career:{matches:0,wins:0,titles:0,finals:0},current:null,history:[],tournamentHistory:[],staffHistory:[],statsHistory:[],news:['Contrato de formação assinado. A tua carreira começa agora.'],partner:45,staff:[],pendingCall:null,selectionHistory:[],selectedCamps:0,sponsors:[],pendingSponsor:null,lastSponsorOfferWeek:0,annualStart:null,annualRecords:{mostWins:0,mostTitles:0,bestOverall:0,bestRank:1200},annualReviews:[],pendingAnnualReview:null};}
 let s=null;
 function migrate(x){
  if(!x||typeof x!=='object')return null;
@@ -87,7 +87,7 @@ function migrate(x){
  if(x.current&&x.current.bracketVersion!==2){x.current=null;x.news=(x.news||[]).concat(['O quadro de torneios foi atualizado para um formato de 8 atletas.']);}
  if(!Array.isArray(x.selectionHistory))x.selectionHistory=[];if(x.selectedCamps==null)x.selectedCamps=0;
  if(!x.career)x.career={matches:0,wins:0,titles:0,finals:0};if(!x.stats)x.stats=fresh().stats;
- if(!Array.isArray(x.tournamentHistory))x.tournamentHistory=[];if(!Array.isArray(x.staffHistory))x.staffHistory=[];if(!Array.isArray(x.statsHistory))x.statsHistory=[];if(!Array.isArray(x.sponsors))x.sponsors=[];if(x.pendingSponsor===undefined)x.pendingSponsor=null;if(x.lastSponsorOfferWeek==null)x.lastSponsorOfferWeek=0;
+ if(!Array.isArray(x.tournamentHistory))x.tournamentHistory=[];if(!Array.isArray(x.staffHistory))x.staffHistory=[];if(!Array.isArray(x.statsHistory))x.statsHistory=[];if(!Array.isArray(x.sponsors))x.sponsors=[];if(x.pendingSponsor===undefined)x.pendingSponsor=null;if(x.lastSponsorOfferWeek==null)x.lastSponsorOfferWeek=0;if(!x.annualRecords)x.annualRecords={mostWins:0,mostTitles:0,bestOverall:0,bestRank:1200};if(!Array.isArray(x.annualReviews))x.annualReviews=[];if(x.pendingAnnualReview===undefined)x.pendingAnnualReview=null;if(!x.annualStart)x.annualStart={matches:x.career.matches||0,wins:x.career.wins||0,titles:x.career.titles||0,finals:x.career.finals||0,rank:x.rank||1200,overall:overallSafe(x.stats),stats:{...x.stats}};
  if(x.current){if(typeof x.current.matchWins!=='number')x.current.matchWins=0;if(typeof x.current.matchLosses!=='number')x.current.matchLosses=0;}
  x.version=5;if(!x.statsHistory.length)x.statsHistory.push({season:x.season,week:x.week,stats:{...x.stats}});return x;
 }
@@ -97,6 +97,26 @@ function snapshotStats(){if(!Array.isArray(s.statsHistory))s.statsHistory=[];con
 function staffEvent(action,p){s.staffHistory.unshift({season:s.season,week:s.week,action,name:p.name,role:p.role,country:p.country||''});}
 function finishTournament(t,won){if(t.logged)return;t.logged=true;const place=won?'Campeão':t.round===2?'Finalista':t.round===1?'Meias-finais':'Quartos de final';s.tournamentHistory.unshift({season:s.season,week:s.week,event:t.event,place,wins:t.matchWins||0,losses:t.matchLosses||0});if(won)s.career.titles++;}
 function overall(){const a=s.stats;return Math.round((a.technique*1.2+a.footwork+a.speed+a.stamina+a.power+a.mental*1.1)/6.3);}
+function overallSafe(a){return Math.round((a.technique*1.2+a.footwork+a.speed+a.stamina+a.power+a.mental*1.1)/6.3);}
+function finishSeasonReview(){
+ const b=s.annualStart||{matches:0,wins:0,titles:0,finals:0,rank:s.rank,overall:overall(),stats:{...s.stats}};
+ const matches=s.career.matches-b.matches,wins=s.career.wins-b.wins,titles=s.career.titles-b.titles,finals=s.career.finals-b.finals;
+ const ts=s.tournamentHistory.filter(x=>x.season===s.season),r=s.annualRecords,records=[];
+ if(wins>r.mostWins){records.push('Mais vitórias numa época: '+wins+' (anterior: '+r.mostWins+').');r.mostWins=wins;}
+ if(titles>r.mostTitles){records.push('Mais títulos numa época: '+titles+' (anterior: '+r.mostTitles+').');r.mostTitles=titles;}
+ const rating=overall();if(rating>r.bestOverall){records.push('Melhor nível geral: '+rating+'/100 (anterior: '+r.bestOverall+').');r.bestOverall=rating;}
+ if(s.rank<r.bestRank){records.push('Melhor ranking da carreira: #'+s.rank+' (anterior: #'+r.bestRank+').');r.bestRank=s.rank;}
+ const review={season:s.season,age:s.age,matches,wins,losses:matches-wins,winRate:matches?Math.round(wins/matches*100):0,titles,finals,tournaments:ts.length,championships:ts.filter(x=>x.place==='Campeão').map(x=>x.event),rankStart:b.rank,rankEnd:s.rank,overallStart:b.overall,overallEnd:rating,records,statsStart:b.stats||{},statsEnd:{...s.stats}};
+ s.annualReviews.unshift(review);s.pendingAnnualReview=review;
+ s.annualStart={matches:s.career.matches,wins:s.career.wins,titles:s.career.titles,finals:s.career.finals,rank:s.rank,overall:rating,stats:{...s.stats}};
+ log('Época '+s.season+' concluída. O relatório anual está disponível na visão geral.');
+}
+function dismissAnnualReview(){s.pendingAnnualReview=null;save();render();}
+function renderAnnualReview(){
+ const p=s.pendingAnnualReview,el=$('annualReview');if(!el)return;el.classList.toggle('hidden',!p);if(!p)return;
+ el.innerHTML='<span class="tag">RELATÓRIO DE FIM DE ÉPOCA</span><h2>Época '+p.season+' · Revisão anual</h2><div class="grid">'+[['Jogos',p.matches],['Vitórias',p.wins+' ('+p.winRate+'%)'],['Derrotas',p.losses],['Títulos',p.titles],['Finais',p.finals],['Torneios',p.tournaments]].map(x=>'<div class="metric"><span class="muted">'+x[0]+'</span><strong>'+x[1]+'</strong></div>').join('')+'</div><div class="row"><span>Ranking</span><b>#'+p.rankStart+' → #'+p.rankEnd+'</b></div><div class="row"><span>Nível geral</span><b>'+p.overallStart+' → '+p.overallEnd+'</b></div><h3 style="margin-top:14px">Títulos conquistados</h3>'+(p.championships.length?p.championships.map(x=>'<p class="gold">🏆 '+x+'</p>').join(''):'<p class="muted">Sem títulos esta época.</p>')+'<h3 style="margin-top:14px">Recordes batidos</h3>'+(p.records.length?p.records.map(x=>'<p class="accent">🏅 '+x+'</p>').join(''):'<p class="muted">Não foram batidos recordes pessoais esta época.</p>')+'<div class="actions" style="margin-top:14px"><button class="primary" id="closeAnnualReview">Continuar para a nova época</button></div>';
+ const btn=$('closeAnnualReview');if(btn)btn.addEventListener('click',dismissAnnualReview);
+}
 function month(){return months[Math.min(11,Math.floor((s.week-1)/4.34))];}
 function staffFor(role){return s.staff.find(x=>x.role===role)||null;}
 function wageTotal(){return s.staff.reduce((n,x)=>n+x.wage,0);}
@@ -182,7 +202,7 @@ function render(){
  $('development').innerHTML='<div class="row"><span>Média dos atributos</span><b>'+overall()+'</b></div><div class="row"><span>Jogos disputados</span><b>'+s.career.matches+'</b></div><div class="row"><span>Taxa de vitórias</span><b>'+(s.career.matches?Math.round(s.career.wins/s.career.matches*100):0)+'%</b></div>';
  $('tournamentHistory').innerHTML=s.tournamentHistory.length?s.tournamentHistory.map(x=>'<div class="row"><span><b>'+x.event+'</b><br><small class="muted">Época '+x.season+' · Semana '+x.week+' · '+x.wins+' vitórias / '+x.losses+' derrotas</small></span><b>'+x.place+'</b></div>').join(''):'Ainda não disputaste torneios.';
  $('staffHistory').innerHTML=s.staffHistory.length?s.staffHistory.map(x=>'<div class="row"><span><b>'+x.action+': '+x.name+'</b><br><small class="muted">'+x.role+' · '+x.country+'</small></span><small class="muted">Época '+x.season+' · Sem. '+x.week+'</small></div>').join(''):'Ainda não existem alterações à equipa técnica.';
- renderEvolution();
+ renderEvolution();renderAnnualReview();
  renderStaff();renderSelection();renderSponsors();
 }
 function renderEvolution(){
@@ -235,12 +255,12 @@ function playMatch(){
  save();render();
 }
 
-function startCareer(){try{s=fresh();s.name=$('pname').value.trim()||'Alex Silva';s.country=$('country').value;s.discipline=$('discipline').value;s.hand=$('hand').value;log('A carreira começou. O teu primeiro objetivo é entrar no top 500 júnior.');snapshotStats();save();render();}catch(e){console.error(e);alert('Não foi possível iniciar a carreira: '+e.message);}}
+function startCareer(){try{s=fresh();s.name=$('pname').value.trim()||'Alex Silva';s.country=$('country').value;s.discipline=$('discipline').value;s.hand=$('hand').value;log('A carreira começou. O teu primeiro objetivo é entrar no top 500 júnior.');s.annualStart={matches:0,wins:0,titles:0,finals:0,rank:s.rank,overall:overall(),stats:{...s.stats}};snapshotStats();save();render();}catch(e){console.error(e);alert('Não foi possível iniciar a carreira: '+e.message);}}
 function train(e){const k=e.target.dataset.train;if(!k||s.trained)return;if(k==='rest'){s.energy=Math.min(100,s.energy+30);s.confidence=Math.min(100,s.confidence+2);s.trainingThisWeek='Descanso';log('Semana dedicada à recuperação.');}else{if(s.energy<18)return;let gain=s.energy>65?2:1;const coach=staffFor('Treinador principal'),physical=staffFor('Preparador físico');if(['technique','footwork'].includes(k)&&coach)gain+=coach.quality;if(['speed','stamina','power'].includes(k)&&physical)gain+=physical.quality;if(k==='mental'){const psychologist=staffFor('Psicólogo desportivo');if(psychologist)gain+=psychologist.quality;}s.stats[k]=Math.min(99,s.stats[k]+gain);s.energy=Math.max(0,s.energy-18);s.trainingThisWeek=attrs[k];log('Sessão de '+attrs[k].toLowerCase()+': evolução de +'+gain+' pontos.');}s.trained=true;snapshotStats();save();render();}
 function hire(e){const role=e.target.dataset.fire;if(role){const old=staffFor(role);if(old){staffEvent('Saída',old);s.staff=s.staff.filter(x=>x.role!==role);log('Dispensaste '+old.name+'.');save();render();}return;}const id=e.target.dataset.staff;if(!id)return;const p=staffCatalog.find(x=>x.id===id);if(!p||s.cash<p.wage)return;const existing=staffFor(p.role);if(existing&&existing.id===id)return;if(existing){staffEvent('Substituição',p);staffEvent('Saída',existing);}else staffEvent('Contratação',p);s.cash-=p.wage;s.staff=s.staff.filter(x=>x.role!==p.role);s.staff.push({...p});log((existing?'Substituíste '+existing.name+' por ':'Contrataste ')+p.name+'. A primeira semana de salário ficou paga (€'+p.wage+').');save();render();}
 function advance(){
  if(s.current&&!s.current.done||s.pendingCall)return;
- s.week++;if(s.week>52){s.week=1;s.season++;s.age++;log('Nova época! Entraste no teu ano de idade '+s.age+'.');}
+ if(s.week===52){finishSeasonReview();s.week=1;s.season++;s.age++;log('Nova época! Entraste no teu ano de idade '+s.age+'.');}else{s.week++;}
  s.energy=Math.min(100,s.energy+22+(staffFor('Fisioterapeuta')?staffFor('Fisioterapeuta').quality*5:0)+(staffFor('Preparador físico')?staffFor('Preparador físico').quality*3:0));
  s.confidence=Math.max(20,Math.min(100,s.confidence+1+(staffFor('Psicólogo desportivo')?staffFor('Psicólogo desportivo').quality*2:0)));
  s.trained=false;s.trainingThisWeek='';s.current=null;
