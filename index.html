@@ -377,11 +377,12 @@ function playMatch(){
   if(playerWonSet)pw++;else ow++;
  }
  const won=pw===2;
+ const round=t.round;
  const score=sets.join(', ');s.career.matches++;
  if(won){s.reputation=Math.min(100,(s.reputation||10)+ (t.tier>=3?2:1));s.career.wins++;const earned=t.tier*(12+round*5);s.points+=earned;t.pointsEarned+=earned;s.rank=Math.max(1,s.rank-t.tier*(2+round));t.matchWins++;if(opp.id&&s.worldPlayers){const rival=s.worldPlayers.find(p=>p.id===opp.id);if(rival){rival.losses=(rival.losses||0)+1;rival.points=Math.max(0,rival.points-Math.round(opp.rating*.08));rival.lastResult='Derrota frente a '+s.name;}}}
  else{s.reputation=Math.max(0,(s.reputation||10)-.25);s.points+=t.tier*4;t.pointsEarned+=t.tier*4;s.rank+=t.tier*2;t.matchLosses++;if(opp.id&&s.worldPlayers){const rival=s.worldPlayers.find(p=>p.id===opp.id);if(rival){rival.wins=(rival.wins||0)+1;rival.points+=Math.round(rival.rating*.35)+20;rival.lastResult='Vitória frente a '+s.name;}}}
  s.energy=Math.max(10,s.energy-13);s.fatigue=Math.min(100,(s.fatigue||0)+10);checkInjury('competição');s.form=Math.max(20,Math.min(100,(s.form||70)+(won?3:-3)-Math.round(s.fatigue*.025)));s.confidence=Math.max(10,Math.min(100,s.confidence+(won?6:-5)));
- const round=t.round,roundName=['Quartos de final','Meias-finais','Final'][round];
+ const roundName=['Quartos de final','Meias-finais','Final'][round];
  log(roundName+': '+(won?'vitória':'derrota')+' frente a '+opp.name+' ('+score+').');opp.result=won?'V':'D';opp.score=score;
  if(won){t.round++;if(round===2){t.done=true;t.won=true;const titlePoints=t.tier*100;s.points+=titlePoints;t.pointsEarned+=titlePoints;s.rank=Math.max(1,s.rank-t.tier*12);log('CAMPEÃO! Conquistaste '+t.event+'.');payTournamentPrize(t,5);finishTournament(t,true);}else if(round===1){s.career.finals++;}}
  else{t.done=true;const placementPoints=t.tier*(round===1?35:round===0?18:8);s.points+=placementPoints;t.pointsEarned+=placementPoints;payTournamentPrize(t,round);finishTournament(t,false);}
