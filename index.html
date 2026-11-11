@@ -234,9 +234,11 @@ function buildBracket(e){
   const a=draw[i],b=draw[i+1],prob=1/(1+Math.exp(-(a.rating-b.rating)/8));
   const winner=Math.random()<prob?a:b;winner.wins=(winner.wins||0)+1;npcWinners.push({quarter:i/2,player:winner});
  }
- const semiWinner=npcWinners.find(x=>Math.abs(x.quarter-quarter)===1)?.player||draw[(quarter===0?2:0)];
- const finalPool=npcWinners.filter(x=>x.quarter!==quarter&&x.quarter!==Math.floor(quarter/2)*2).map(x=>x.player);
- const finalOpponent=finalPool.sort((a,b)=>b.rating-a.rating)[0]||draw[7];
+ const semiQuarter=quarter%2===0?quarter+1:quarter-1;
+ const semiWinner=npcWinners.find(x=>x.quarter===semiQuarter)?.player||draw[semiQuarter*2];
+ const otherHalf=quarter<2?[2,3]:[0,1];
+ const finalPool=npcWinners.filter(x=>otherHalf.includes(x.quarter)).map(x=>x.player);
+ const finalOpponent=finalPool.sort((a,b)=>b.rating-a.rating)[0]||draw[otherHalf[0]*2];
  const opponents=[playerOpponent,semiWinner,finalOpponent].map((p,i)=>({...p,result:null,score:null,round:i}));
  return {draw:draw.map((p,i)=>({...p,slot:i+1})),opponents,playerSeed:1,playerIndex};
 }
