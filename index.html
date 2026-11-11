@@ -159,7 +159,7 @@ function advance(){
 }
 function init(){
  $('start').addEventListener('click',startCareer);document.querySelectorAll('.nav').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
- $('trainingOptions').addEventListener('click',train);$('staffOptions').addEventListener('click',hire);$('advance').addEventListener('click',advance);
+ $('trainingOptions').addEventListener('click',train);$('staffOptions').addEventListener('click',hire);$('staffCurrent').addEventListener('click',hire);$('advance').addEventListener('click',advance);
  $('save').addEventListener('click',()=>{save();alert('Carreira guardada neste dispositivo.');});
  $('reset').addEventListener('click',()=>{if(confirm('Tens a certeza? A carreira guardada será apagada.')){localStorage.removeItem('rtwc-save');s=null;$('game').classList.add('hidden');$('setup').classList.remove('hidden');}});
  try{const old=localStorage.getItem('rtwc-save');if(old)s=migrate(JSON.parse(old));}catch(e){s=null;}if(s)render();
