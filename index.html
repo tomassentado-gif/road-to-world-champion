@@ -198,9 +198,7 @@ function renderEvolution(){
 function generateGameScore(playerWon){
  const winner=21+Math.floor(Math.random()*8)+(Math.random()<.12?2:0);
  const capped=Math.min(30,winner);
- const loserMax=capped===30?29:capped-2;
- const loserMin=Math.max(0,loserMax-7);
- const loser=loserMin+Math.floor(Math.random()*(loserMax-loserMin+1));
+ const loser=capped===21?Math.floor(Math.random()*20):(capped===30?29:capped-2);
  return playerWon?capped+'-'+loser:loser+'-'+capped;
 }
 function playMatch(){
