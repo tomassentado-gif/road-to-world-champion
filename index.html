@@ -42,70 +42,107 @@
 </div></div></section>
 </main>
 <script>
-const $=id=>document.getElementById(id);
-const months=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-const attrs={technique:'Técnica',footwork:'Deslocamento',speed:'Velocidade',stamina:'Resistência',power:'Potência',mental:'Mentalidade'};
-const events=[
-{week:3,name:'Regional Junior Open',level:'Regional',tier:1,discipline:'both'},
-{week:7,name:'National Junior Championships',level:'Nacional',tier:2,discipline:'both'},
-{week:12,name:'Junior International Series',level:'Internacional',tier:2,discipline:'both'},
-{week:17,name:'European Junior Challenge',level:'Internacional',tier:3,discipline:'both'},
-{week:22,name:'Summer Junior Open',level:'Internacional',tier:2,discipline:'both'},
-{week:28,name:'National Senior Championships',level:'Nacional',tier:3,discipline:'both'},
-{week:34,name:'European Junior Championships',level:'Continental',tier:4,discipline:'both'},
-{week:40,name:'International Challenge',level:'Internacional',tier:3,discipline:'both'},
-{week:47,name:'World Junior Championships',level:'Mundial',tier:5,discipline:'both'}
+
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const attrs = {technique:'Técnica',footwork:'Deslocamento',speed:'Velocidade',stamina:'Resistência',power:'Potência',mental:'Mentalidade'};
+const events = [
+{week:3,name:'Regional Junior Open',level:'Regional',tier:1},
+{week:7,name:'National Junior Championships',level:'Nacional',tier:2},
+{week:12,name:'Junior International Series',level:'Internacional',tier:2},
+{week:17,name:'European Junior Challenge',level:'Internacional',tier:3},
+{week:22,name:'Summer Junior Open',level:'Internacional',tier:2},
+{week:28,name:'National Senior Championships',level:'Nacional',tier:3},
+{week:34,name:'European Junior Championships',level:'Continental',tier:4},
+{week:40,name:'International Challenge',level:'Internacional',tier:3},
+{week:47,name:'World Junior Championships',level:'Mundial',tier:5}
 ];
-const fresh=()=>({version:2,name:'',country:'Portugal',hand:'Direita',discipline:'both',age:16,week:1,season:1,energy:100,confidence:50,rank:1200,points:0,prize:0,trained:false,trainingThisWeek:'',stats:{technique:48,footwork:46,speed:48,stamina:47,power:44,mental:48},career:{matches:0,wins:0,titles:0,finals:0},current:null,history:[],news:['Contrato de formação assinado. A tua carreira profissional começa agora.'],partner:45});
-let s=null;
-function save(){localStorage.setItem('rtwc-save',JSON.stringify(s))}
-function log(msg){s.news.push('S'+s.season+' · Sem. '+s.week+': '+msg);s.history.unshift(msg);s.news=s.news.slice(-40);s.history=s.history.slice(0,100)}
-function eventAt(w){return events.find(e=>e.week===w)||null}
-function overall(){const a=s.stats;return Math.round((a.technique*1.2+a.footwork+a.speed+a.stamina+a.power+a.mental*1.1)/6.3)}
-function month(){return months[Math.min(11,Math.floor((s.week-1)/4.34))]}
-function showPage(page){document.querySelectorAll('[id^="page-"]').forEach(x=>x.classList.add('hidden'));$('page-'+page).classList.remove('hidden');document.querySelectorAll('.nav').forEach(x=>x.classList.toggle('active',x.dataset.page===page))}
-function makeTournament(e){const names=['Luca Moretti','Ethan Brown','Mikkel Jensen','Riku Tanaka','Noah Martin','Arjun Patel','Mateo Garcia'];const rating=42+e.tier*7+Math.floor(Math.random()*9);const opponents=names.sort(()=>Math.random()-.5).slice(0,7).map((n,i)=>({name:n,rating:Math.max(35,rating+Math.floor(Math.random()*19)-9),result:null}));s.current={event:e.name,level:e.level,tier:e.tier,round:0,opponents,done:false,won:false,discipline:s.discipline==='doubles'?'Pares':'Singulares'};log('Chegaste ao torneio '+e.name+'. O quadro principal está definido.')}
-function playMatch(){
- const t=s.current;if(!t||t.done)return;
- const rounds=['1.ª Ronda','Oitavos de final','Quartos de final','Meias-finais','Final'];const round=t.round;
- const opp=t.opponents[round];if(!opp){t.done=true;return}
- const form=overall()+(s.energy-70)*.12+(s.confidence-50)*.08+(s.stats.mental-50)*.1;
- const own=form+(t.discipline==='Pares'?(s.partner-50)*.35:0);
- const diff=own-opp.rating;const p=1/(1+Math.exp(-diff/13));const won=Math.random()<p;
- const a=won?21:Math.floor(15+Math.random()*5),b=won?Math.floor(14+Math.random()*6):21;
- s.career.matches++;if(won){s.career.wins++;s.points+=t.tier*8;s.rank=Math.max(1,s.rank-t.tier*2);}else{s.points+=t.tier*3;}s.energy=Math.max(10,s.energy-13);s.confidence=Math.max(10,Math.min(100,s.confidence+(won?6:-5)));
- log(rounds[round]+': '+(won?'vitória':'derrota')+' frente a '+opp.name+' ('+a+'-'+b+').');opp.result=won?'V':'D';
- if(won){t.round++;if(t.round===5){t.done=true;t.won=true;s.career.titles++;s.points+=t.tier*80;s.prize+=t.tier*100;log('CAMPEÃO! Conquistaste '+t.event+'.');}else if(t.round===4){s.career.finals++;}}
- else{t.done=true;s.points+=t.tier*12;s.rank=Math.max(1,s.rank-Math.max(1,t.tier*2));}
- if(t.done&&t.won)s.rank=Math.max(1,s.rank-t.tier*12);
- save();render();
+const fresh = () => ({version:3,name:'',country:'Portugal',hand:'Direita',discipline:'both',age:16,week:1,season:1,energy:100,confidence:50,rank:1200,points:0,prize:0,trained:false,trainingThisWeek:'',stats:{technique:48,footwork:46,speed:48,stamina:47,power:44,mental:48},career:{matches:0,wins:0,titles:0,finals:0},current:null,history:[],news:['Contrato de formação assinado. A tua carreira começa agora.'],partner:45});
+let s = null;
+function save(){try{localStorage.setItem('rtwc-save',JSON.stringify(s));}catch(err){console.warn('Não foi possível guardar',err);}}
+function log(msg){s.news.push('S'+s.season+' · Sem. '+s.week+': '+msg);s.history.unshift(msg);s.news=s.news.slice(-40);s.history=s.history.slice(0,100);}
+function overall(){const a=s.stats;return Math.round((a.technique*1.2+a.footwork+a.speed+a.stamina+a.power+a.mental*1.1)/6.3);}
+function month(){return months[Math.min(11,Math.floor((s.week-1)/4.34))];}
+function showPage(page){document.querySelectorAll('[id^="page-"]').forEach(el=>el.classList.add('hidden'));const target=$('page-'+page);if(target)target.classList.remove('hidden');document.querySelectorAll('.nav').forEach(el=>el.classList.toggle('active',el.dataset.page===page));}
+function makeTournament(ev){
+ const names=['Luca Moretti','Ethan Brown','Mikkel Jensen','Riku Tanaka','Noah Martin','Arjun Patel','Mateo Garcia'];
+ const base=42+ev.tier*7+Math.floor(Math.random()*9);
+ const shuffled=[...names].sort(()=>Math.random()-.5);
+ const opponents=shuffled.slice(0,5).map(name=>({name,rating:Math.max(35,base+Math.floor(Math.random()*19)-9),result:null}));
+ s.current={event:ev.name,level:ev.level,tier:ev.tier,round:0,opponents,done:false,won:false,discipline:s.discipline==='doubles'?'Pares':'Singulares'};
+ log('Chegaste ao torneio '+ev.name+'. O quadro principal está definido.');
+}
+function renderTournament(){
+ const t=s.current;
+ $('tournamentPanel').innerHTML=t?'<span class="tag">'+t.level+'</span><h3>'+t.event+'</h3><p class="muted">'+(t.done?(t.won?'Terminaste como campeão!':'A tua participação terminou.'):'Ronda '+(t.round+1)+' de 5 · '+t.discipline)+'</p>'+(t.done?'<b class="'+(t.won?'accent':'gold')+'">'+(t.won?'TÍTULO CONQUISTADO':'Torneio concluído')+'</b>':'<button class="primary" id="matchBtn">Jogar próximo encontro</button>'):'<p class="muted">Não estás inscrito num torneio neste momento. Quando chegar uma semana de competição, o quadro será criado automaticamente.</p>';
+ $('draw').innerHTML=t?t.opponents.map((o,i)=>'<div class="row"><span><small class="round">'+(['Quartos de final','Meias-finais','Final','Meias-finais','Final'][i]||'Ronda '+(i+1))+'</small><br>'+o.name+' <small class="muted">('+o.rating+')</small></span><b class="'+(o.result==='V'?'accent':o.result==='D'?'danger':'muted')+'">'+(o.result||'Por jogar')+'</b></div>').join(''):'<span class="muted">Sem quadro ativo.</span>';
+ const btn=$('matchBtn');if(btn)btn.addEventListener('click',playMatch);
 }
 function render(){
- if(!s)return;$('setup').classList.add('hidden');$('game').classList.remove('hidden');
+ if(!s)return;
+ $('setup').classList.add('hidden');$('game').classList.remove('hidden');
  $('metrics').innerHTML=[['Ranking mundial','#'+s.rank],['Pontos BWF',s.points],['Vitórias',s.career.wins+'/'+s.career.matches],['Nível atual',overall()+'/100']].map(x=>'<div class="metric"><span class="muted">'+x[0]+'</span><strong>'+x[1]+'</strong></div>').join('');
  $('seasonTag').textContent='ÉPOCA '+s.season;$('dateTitle').textContent='Semana '+s.week+' · '+month();$('playerLine').textContent=s.name+' · '+s.country+' · '+s.age+' anos · '+(s.discipline==='both'?'Singulares e pares':s.discipline==='singles'?'Singulares':'Pares');
  $('energyText').textContent=s.energy+'%';$('energyBar').style.width=s.energy+'%';$('confidenceText').textContent=s.confidence+'/100';$('confidenceBar').style.width=s.confidence+'%';
- const ev=eventAt(s.week);$('nextEvent').textContent=ev?ev.name:'Semana de preparação';$('nextDesc').textContent=ev?ev.level+' · Categoria '+ev.tier+' · Semana '+ev.week:'Treina, recupera e prepara os próximos desafios.';
+ const ev=events.find(e=>e.week===s.week);$('nextEvent').textContent=ev?ev.name:'Semana de preparação';$('nextDesc').textContent=ev?ev.level+' · Categoria '+ev.tier+' · Semana '+ev.week:'Treina, recupera e prepara os próximos desafios.';
  $('advance').disabled=!!(s.current&&!s.current.done);
  $('overviewStats').innerHTML='<div class="row"><span>Idade</span><b>'+s.age+'</b></div><div class="row"><span>Títulos</span><b>'+s.career.titles+'</b></div><div class="row"><span>Finais</span><b>'+s.career.finals+'</b></div><div class="row"><span>Prémios acumulados</span><b>€'+s.prize+'</b></div>';
  $('news').innerHTML=s.news.slice(-7).reverse().map(x=>'<p>'+x+'</p>').join('');
  $('trainingOptions').innerHTML=[['technique','Técnica','Técnico'],['footwork','Deslocamento','Técnico'],['speed','Velocidade','Físico'],['stamina','Resistência','Físico'],['power','Potência','Físico'],['mental','Mentalidade','Mental']].map(([k,n,type])=>'<div class="metric"><span class="muted">'+type+'</span><h3>'+n+'</h3><button data-train="'+k+'" '+(s.trained||s.energy<18?'disabled':'')+'>Treinar</button></div>').join('')+'<div class="metric"><span class="muted">Recuperação</span><h3>Descanso</h3><button data-train="rest" '+(s.trained?'disabled':'')+'>Descansar</button></div>';
  $('trainingStatus').textContent=s.trainingThisWeek?'Sessão realizada esta semana: '+s.trainingThisWeek+'.':'Ainda não treinaste esta semana.';
  $('attributeList').innerHTML=Object.entries(attrs).map(([k,n])=>'<div class="row"><span>'+n+'</span><div style="width:55%"><b>'+s.stats[k]+'</b><div class="bar"><i style="width:'+s.stats[k]+'%"></i></div></div></div>').join('');
- $('calendarList').innerHTML=events.map(e=>'<div class="row"><span><b>Semana '+e.week+'</b> · '+e.name<br><small class="muted">'+e.level+' · Categoria '+e.tier+'</small></span><span class="pill">'+(s.week>e.week?'Concluído':s.week===e.week?'Esta semana':'Agendado')+'</span></div>').join('');
- renderTournament();$('profile').innerHTML='<div class="row"><span>Nome</span><b>'+s.name+'</b></div><div class="row"><span>Nacionalidade</span><b>'+s.country+'</b></div><div class="row"><span>Mão dominante</span><b>'+s.hand+'</b></div><div class="row"><span>Disciplinas</span><b>'+ (s.discipline==='both'?'Singulares e pares':s.discipline==='singles'?'Singulares':'Pares')+'</b></div><div class="row"><span>Parceiro de pares</span><b>'+ (s.discipline==='singles'?'—':'Avaliação '+s.partner+'/100')+'</b></div>';
+ $('calendarList').innerHTML=events.map(e=>'<div class="row"><span><b>Semana '+e.week+'</b> · '+e.name+'<br><small class="muted">'+e.level+' · Categoria '+e.tier+'</small></span><span class="pill">'+(s.week>e.week?'Concluído':s.week===e.week?'Esta semana':'Agendado')+'</span></div>').join('');
+ renderTournament();
+ $('profile').innerHTML='<div class="row"><span>Nome</span><b>'+s.name+'</b></div><div class="row"><span>Nacionalidade</span><b>'+s.country+'</b></div><div class="row"><span>Mão dominante</span><b>'+s.hand+'</b></div><div class="row"><span>Disciplinas</span><b>'+(s.discipline==='both'?'Singulares e pares':s.discipline==='singles'?'Singulares':'Pares')+'</b></div><div class="row"><span>Parceiro de pares</span><b>'+(s.discipline==='singles'?'—':'Avaliação '+s.partner+'/100')+'</b></div>';
  $('development').innerHTML='<div class="row"><span>Média dos atributos</span><b>'+overall()+'</b></div><div class="row"><span>Jogos disputados</span><b>'+s.career.matches+'</b></div><div class="row"><span>Taxa de vitórias</span><b>'+(s.career.matches?Math.round(s.career.wins/s.career.matches*100):0)+'%</b></div>';
  $('history').innerHTML=s.history.length?s.history.map(x=>'<p>'+x+'</p>').join(''):'Ainda não existem resultados.';
 }
-function renderTournament(){const t=s.current;$('tournamentPanel').innerHTML=t?'<span class="tag">'+t.level+'</span><h3>'+t.event+'</h3><p class="muted">'+(t.done?(t.won?'Terminaste como campeão!':'A tua participação terminou.'):'Ronda '+(t.round+1)+' de 5 · '+t.discipline)+'</p>'+(t.done?'<b class="'+(t.won?'accent':'gold')+'">'+(t.won?'TÍTULO CONQUISTADO':'Torneio concluído')+'</b>':'<button class="primary" id="matchBtn">Jogar próximo encontro</button>'):'<p class="muted">Não estás inscrito num torneio neste momento. Quando chegar uma semana de competição, o quadro será criado automaticamente.</p>';
- $('draw').innerHTML=t?t.opponents.map((o,i)=>'<div class="row"><span><small class="round">'+(['1.ª ronda','Oitavos','Quartos','Meias-finais','Final'][i]||'Adversário')+'</small><br>'+o.name+' <small class="muted">('+o.rating+')</small></span><b class="'+(o.result==='V'?'accent':o.result==='D'?'danger':'muted')+'">'+(o.result||'Por jogar')+'</b></div>').join(''):'<span class="muted">Sem quadro ativo.</span>';
- const btn=$('matchBtn');if(btn)btn.onclick=playMatch;
+function playMatch(){
+ const t=s.current;if(!t||t.done)return;
+ const opp=t.opponents[t.round];if(!opp)return;
+ const form=overall()+(s.energy-70)*.12+(s.confidence-50)*.08+(s.stats.mental-50)*.1;
+ const own=form+(t.discipline==='Pares'?(s.partner-50)*.35:0);
+ const won=Math.random()<1/(1+Math.exp(-(own-opp.rating)/13));
+ const a=won?21:Math.floor(15+Math.random()*5),b=won?Math.floor(14+Math.random()*6):21;
+ s.career.matches++;if(won){s.career.wins++;s.points+=t.tier*8;s.rank=Math.max(1,s.rank-t.tier*2);}else{s.points+=t.tier*3;s.rank+=t.tier*2;}
+ s.energy=Math.max(10,s.energy-13);s.confidence=Math.max(10,Math.min(100,s.confidence+(won?6:-5)));
+ log((['Quartos de final','Meias-finais','Final','Meias-finais','Final'][t.round])+': '+(won?'vitória':'derrota')+' frente a '+opp.name+' ('+a+'-'+b+').');opp.result=won?'V':'D';
+ if(won){t.round++;if(t.round===5){t.done=true;t.won=true;s.career.titles++;s.points+=t.tier*80;s.prize+=t.tier*100;s.rank=Math.max(1,s.rank-t.tier*12);log('CAMPEÃO! Conquistaste '+t.event+'.');}else if(t.round===4){s.career.finals++;}}
+ else{t.done=true;s.points+=t.tier*12;}
+ save();render();
 }
-$('start').onclick=()=>{s=fresh();s.name=$('pname').value.trim()||'Alex Silva';s.country=$('country').value;s.discipline=$('discipline').value;s.hand=$('hand').value;log('A carreira começou. O teu primeiro objetivo é entrar no top 500 júnior.');save();render()};
-document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
-$('trainingOptions').onclick=e=>{const k=e.target.dataset.train;if(!k||s.trained)return;if(k==='rest'){s.energy=Math.min(100,s.energy+30);s.confidence=Math.min(100,s.confidence+2);s.trainingThisWeek='Descanso';log('Semana dedicada à recuperação.');}else{if(s.energy<18)return;s.stats[k]=Math.min(99,s.stats[k]+(s.energy>65?2:1));s.energy=Math.max(0,s.energy-18);s.trainingThisWeek=attrs[k];log('Sessão de '+attrs[k].toLowerCase()+': evolução registada.');}s.trained=true;save();render()};
-$('advance').onclick=()=>{if(s.current&&!s.current.done)return;const previous=s.week;s.week++;if(s.week>52){s.week=1;s.season++;s.age++;log('Nova época! Entraste no teu ano de idade '+s.age+'.');}s.energy=Math.min(100,s.energy+22);s.confidence=Math.max(20,Math.min(100,s.confidence+1));s.trained=false;s.trainingThisWeek='';s.current=null;const e=eventAt(s.week);if(e&&s.discipline!=='singles'&&s.discipline!=='doubles'||e){makeTournament(e)}log('Semana de preparação concluída.');save();render()};
-$('save').onclick=()=>{save();alert('Carreira guardada neste dispositivo.')};
-$('reset').onclick=()=>{if(confirm('Tens a certeza? A carreira guardada será apagada.')){localStorage.removeItem('rtwc-save');s=null;$('game').classList.add('hidden');$('setup').classList.remove('hidden')}};
-try{const old=localStorage.getItem('rtwc-save');if(old){const parsed=JSON.parse(old);if(parsed.version===2)s=parsed;}}catch(e){s=null}if(s)render();
+function startCareer(){
+ try{
+  s=fresh();s.name=$('pname').value.trim()||'Alex Silva';s.country=$('country').value;s.discipline=$('discipline').value;s.hand=$('hand').value;
+  log('A carreira começou. O teu primeiro objetivo é entrar no top 500 júnior.');
+  save();render();
+ }catch(err){console.error(err);alert('Não foi possível iniciar a carreira: '+err.message);}
+}
+function train(e){
+ const k=e.target.dataset.train;if(!k||s.trained)return;
+ if(k==='rest'){s.energy=Math.min(100,s.energy+30);s.confidence=Math.min(100,s.confidence+2);s.trainingThisWeek='Descanso';log('Semana dedicada à recuperação.');}
+ else{if(s.energy<18)return;s.stats[k]=Math.min(99,s.stats[k]+(s.energy>65?2:1));s.energy=Math.max(0,s.energy-18);s.trainingThisWeek=attrs[k];log('Sessão de '+attrs[k].toLowerCase()+': evolução registada.');}
+ s.trained=true;save();render();
+}
+function advance(){
+ if(s.current&&!s.current.done)return;
+ s.week++;if(s.week>52){s.week=1;s.season++;s.age++;log('Nova época! Entraste no teu ano de idade '+s.age+'.');}
+ s.energy=Math.min(100,s.energy+22);s.confidence=Math.max(20,Math.min(100,s.confidence+1));s.trained=false;s.trainingThisWeek='';s.current=null;
+ const ev=events.find(e=>e.week===s.week);if(ev)makeTournament(ev);
+ log('Semana de preparação concluída.');save();render();
+}
+function init(){
+ $('start').addEventListener('click',startCareer);
+ document.querySelectorAll('.nav').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
+ $('trainingOptions').addEventListener('click',train);
+ $('advance').addEventListener('click',advance);
+ $('save').addEventListener('click',()=>{save();alert('Carreira guardada neste dispositivo.');});
+ $('reset').addEventListener('click',()=>{if(confirm('Tens a certeza? A carreira guardada será apagada.')){localStorage.removeItem('rtwc-save');s=null;$('game').classList.add('hidden');$('setup').classList.remove('hidden');}});
+ try{const old=localStorage.getItem('rtwc-save');if(old){const parsed=JSON.parse(old);if(parsed.version===3)s=parsed;}}catch(err){s=null;}
+ if(s)render();
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
 </script></body></html>
