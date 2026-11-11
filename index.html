@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Road to World Champion</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#141f31;--panel2:#1b2a40;--line:#2b3b52;--text:#edf3fb;--muted:#9aabc0;--accent:#43d3b0;--gold:#f3c969}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,Arial}header{padding:24px max(20px,calc((100% - 1100px)/2));background:#101a2a;border-bottom:1px solid var(--line)}header small{color:var(--accent);letter-spacing:2px;font-weight:700}h1{margin:4px 0;font-size:clamp(25px,5vw,38px)}main{max-width:1100px;margin:24px auto;padding:0 18px}.top{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:18px 0}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}.muted{color:var(--muted)}.value{font-size:28px;font-weight:750}.bar{height:8px;background:#29384c;border-radius:10px;overflow:hidden;margin-top:7px}.bar i{display:block;height:100%;background:var(--accent)}button,select,input{background:var(--panel2);border:1px solid var(--line);border-radius:9px;color:var(--text);padding:10px 13px;font:inherit}button{cursor:pointer}button.primary{background:var(--accent);color:#071b19;border:0;font-weight:750}button:disabled{opacity:.4;cursor:not-allowed}.actions{display:flex;gap:8px;flex-wrap:wrap}.row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}.row:last-child{border:0}.tag{color:var(--gold);font-weight:700}.log{max-height:220px;overflow:auto}.log p{margin:7px 0;color:var(--muted)}.field{display:grid;gap:5px;margin:10px 0}input,select{width:100%}
+</style>
+</head>
+<body>
+<header><small>BADMINTON CAREER SIMULATOR</small><h1>ROAD TO WORLD CHAMPION</h1><div class="muted">Da promessa júnior ao topo do badminton mundial.</div></header>
+<main>
+<section id="setup" class="card">
+<h2>Cria o teu jogador</h2>
+<div class="grid">
+<label class="field">Nome<input id="name" value="Alex Silva"></label>
+<label class="field">País<select id="country"><option>Portugal</option><option>Dinamarca</option><option>França</option><option>Inglaterra</option><option>Japão</option><option>China</option><option>Índia</option><option>Indonésia</option><option>Malásia</option><option>Espanha</option></select></label>
+<label class="field">Disciplina<select id="discipline"><option value="singles">Singulares + Pares</option><option value="singles">Singulares</option><option value="doubles">Pares</option></select></label>
+</div>
+<button class="primary" id="start">Começar carreira</button>
+</section>
+<section id="game" hidden>
+<div class="top"><div><div class="muted" id="identity"></div><h2 id="weekTitle">Época 1 · Semana 1</h2></div><div class="actions"><button id="save">Guardar</button><button id="reset">Nova carreira</button></div></div>
+<div class="grid" id="stats"></div>
+<div class="grid">
+<div class="card"><h3>Treino da semana</h3><p class="muted">Escolhe uma área para desenvolver. Treinar consome energia.</p><div class="actions" id="training"></div><p id="trainingMsg" class="muted"></p></div>
+<div class="card"><h3>Próximo torneio</h3><div id="event"></div><button class="primary" id="play" style="margin-top:12px">Jogar semana / torneio</button></div>
+<div class="card"><h3>Classificações</h3><div id="ranking"></div></div>
+<div class="card"><h3>Diário de carreira</h3><div class="log" id="log"></div></div>
+</div>
+</section>
+</main>
+<script>
+const defaults=()=>({name:'',country:'Portugal',week:1,age:16,energy:100,rank:850,points:0,stats:{technique:48,speed:48,endurance:48,strength:45,mentality:48},log:['A tua carreira começou. O primeiro objetivo é ganhar experiência no circuito júnior.'],trained:false});
+let s=null,chosen='technique';
+const labels={technique:'Técnica',speed:'Velocidade',endurance:'Resistência',strength:'Força',mentality:'Mentalidade'};
+const events=['Regional Junior Open','Campeonato Nacional Sub-19','International Junior Series','Continental Junior Challenge','World Junior Championships'];
+function persist(){localStorage.setItem('rtwc-save',JSON.stringify(s))}
+function render(){
+ document.getElementById('setup').hidden=!!s;document.getElementById('game').hidden=!s;if(!s)return;
+ document.getElementById('identity').textContent=s.name+' · '+s.country+' · '+s.age+' anos';
+ document.getElementById('weekTitle').textContent='Época '+(Math.floor((s.week-1)/52)+1)+' · Semana '+(((s.week-1)%52)+1);
+ document.getElementById('stats').innerHTML=[['Ranking mundial','#'+s.rank],['Pontos',s.points],['Energia',s.energy+'%'],['Idade',s.age+' anos']].map(x=>'<div class="card"><div class="muted">'+x[0]+'</div><div class="value">'+x[1]+'</div></div>').join('');
+ document.getElementById('training').innerHTML=Object.entries(labels).map(([k,v])=>'<button data-train="'+k+'" '+(s.trained||s.energy<15?'disabled':'')+'>'+v+'</button>').join('');
+ document.getElementById('ranking').innerHTML=Object.entries(labels).map(([k,v])=>'<div class="row"><span>'+v+'</span><b>'+s.stats[k]+'</b></div>').join('');
+ const eventNo=Math.floor((s.week-1)/4)%events.length;
+ document.getElementById('event').innerHTML='<div class="tag">'+events[eventNo]+'</div><p class="muted">Semana '+s.week+' · '+(eventNo===1?'Nacional':eventNo===4?'Mundial':'Internacional')+'</p>';
+ document.getElementById('log').innerHTML=s.log.slice().reverse().map(x=>'<p>• '+x+'</p>').join('');
+}
+document.getElementById('start').onclick=()=>{s=defaults();s.name=document.getElementById('name').value.trim()||'Jogador';s.country=document.getElementById('country').value;s.log.unshift('Inscrição confirmada. Bem-vindo ao circuito, '+s.name+'.');persist();render()};
+document.getElementById('training').onclick=e=>{const k=e.target.dataset.train;if(!k||s.trained||s.energy<15)return;s.stats[k]=Math.min(99,s.stats[k]+2);s.energy-=15;s.trained=true;s.log.push('Treino de '+labels[k].toLowerCase()+': +2 pontos de atributo.');document.getElementById('trainingMsg').textContent='Treino concluído: '+labels[k]+' +2.';persist();render()};
+document.getElementById('play').onclick=()=>{const ev=events[Math.floor((s.week-1)/4)%events.length];const form=Object.values(s.stats).reduce((a,b)=>a+b,0)/5;const chance=Math.max(.2,Math.min(.85,(form-35)/70));const win=Math.random()<chance;const gain=win?35+Math.floor(form):8+Math.floor(form/3);s.points+=gain;s.rank=Math.max(1,s.rank-(win?Math.floor(gain/4):Math.floor(gain/12)));s.log.push(ev+': '+(win?'boa prestação — vitória!':'eliminação após um jogo equilibrado.')+' +'+gain+' pontos.');s.week++;if(s.week%52===1)s.age++;s.energy=Math.min(100,s.energy+25);s.trained=false;document.getElementById('trainingMsg').textContent='';persist();render()};
+document.getElementById('save').onclick=()=>{persist();alert('Carreira guardada neste dispositivo.')};
+document.getElementById('reset').onclick=()=>{if(confirm('Apagar esta carreira e começar de novo?')){s=null;localStorage.removeItem('rtwc-save');render()}};
+const old=localStorage.getItem('rtwc-save');if(old){try{s=JSON.parse(old)}catch(e){s=null}}render();
+</script>
+</body></html>
