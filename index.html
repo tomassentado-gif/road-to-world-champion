@@ -396,6 +396,19 @@ function hire(e){const role=e.target.dataset.fire;if(role){const old=staffFor(ro
 function advance(){
  let tournamentStarted=false;
  if(s.current&&!s.current.done||s.pendingCall||s.pendingSponsor||s.pendingClub||s.pendingTransfer)return;
+ const nextSeason=s.week===52?s.season+1:s.season;
+ const nextWeek=s.week===52?1:s.week+1;
+ const upcomingRegistration=(s.registeredEvents||[]).find(x=>Number(x.season)===Number(nextSeason)&&Number(x.week)===Number(nextWeek));
+ if(upcomingRegistration){
+  const upcomingEvent=events.find(x=>x.name===upcomingRegistration.name)||events.find(x=>Number(x.week)===Number(nextWeek));
+  if(upcomingEvent){
+   if(s.week===52){finishSeasonReview();s.week=1;s.season++;s.age++;s.lastSponsorOfferWeek=0;ageWorldPlayers();log('Nova época! Entraste no teu ano de idade '+s.age+'. Os patrocinadores voltam a avaliar a tua época.');}else{s.week++;}
+   s.registeredEvents=s.registeredEvents.filter(x=>x!==upcomingRegistration);
+   if(s.injury){log('Ficaste de fora de '+upcomingEvent.name+' para concluir a recuperação.');}
+   else{s.fatigue=Math.min(100,s.fatigue+upcomingEvent.travelDays*2);s.energy=Math.max(20,s.energy-upcomingEvent.travelDays*3);s.travelHistory.unshift({season:s.season,week:s.week,event:upcomingEvent.name,location:upcomingEvent.location,country:upcomingEvent.country,cost:upcomingRegistration.total});makeTournament(upcomingEvent);tournamentStarted=!!s.current;log('Viagem concluída: '+upcomingEvent.travelDays+' dias de deslocação e estadia em '+upcomingEvent.location+'.');}
+   snapshotStats();save();render();if(tournamentStarted)showPage('tournament');return;
+  }
+ }
  if(s.week===52){finishSeasonReview();s.week=1;s.season++;s.age++;s.lastSponsorOfferWeek=0;ageWorldPlayers();log('Nova época! Entraste no teu ano de idade '+s.age+'. Os patrocinadores voltam a avaliar a tua época.');}else{s.week++;}
  const recovery=14+(staffFor('Fisioterapeuta')?staffFor('Fisioterapeuta').quality*4:0)+(staffFor('Preparador físico')?staffFor('Preparador físico').quality*2:0);
  s.fatigue=Math.max(0,s.fatigue-recovery);
