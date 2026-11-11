@@ -124,11 +124,15 @@ function sponsorIncome(){return s.sponsors.reduce((n,x)=>n+(x.weekly||0),0);}
 function staffMatchBonus(){const c=staffFor('Treinador principal'),p=staffFor('Preparador físico'),m=staffFor('Psicólogo desportivo');return (c?c.quality*1.15:0)+(p?p.quality*.75:0)+(m?m.quality*.8:0);}
 function maybeSponsorOffer(){
  if(s.pendingSponsor||s.week-s.lastSponsorOfferWeek<5||s.sponsors.length>=2)return;
- if(![6,14,22,30,38,46].includes(s.week))return;
- s.lastSponsorOfferWeek=s.week;
+ // Avaliação regular ao longo de toda a época; não depende de semanas fixas.
+ if(s.week<6||s.week%2!==0)return;
  const rating=overall(),wins=s.career.wins,rankFactor=Math.max(0,Math.min(1,(1250-s.rank)/1000));
+ const recent=s.tournamentHistory.slice(-6);
+ const recentWins=recent.reduce((n,t)=>n+(t.wins||0),0);
  const level=Math.max(1,Math.min(3,1+Math.floor((rating-48)/13)+Math.floor(wins/12)));
- if(rating<48&&wins<2)return;
+ // Resultados, evolução e ranking podem atrair marcas mesmo antes de atingir um rating elevado.
+ if(rating<43&&wins<2&&recentWins<3&&s.rank>1100)return;
+ s.lastSponsorOfferWeek=s.week;
  const brands=[['AeroSport','equipamento e material de badminton'],['ShuttlePro','material técnico e volantes'],['CourtLine','vestuário e equipamento desportivo'],['RallyWorks','apoio a jovens atletas'],['FeatherPeak','equipamento de competição']];
  const brand=brands[Math.floor(Math.random()*brands.length)];
  const weekly=Math.round((25+level*22+Math.max(0,rating-48)*1.4+rankFactor*45)/5)*5;
@@ -263,7 +267,7 @@ function train(e){const k=e.target.dataset.train;if(!k||s.trained)return;if(k===
 function hire(e){const role=e.target.dataset.fire;if(role){const old=staffFor(role);if(old){staffEvent('Saída',old);s.staff=s.staff.filter(x=>x.role!==role);log('Dispensaste '+old.name+'.');save();render();}return;}const id=e.target.dataset.staff;if(!id)return;const p=staffCatalog.find(x=>x.id===id);if(!p||s.cash<p.wage)return;const existing=staffFor(p.role);if(existing&&existing.id===id)return;if(existing){staffEvent('Substituição',p);staffEvent('Saída',existing);}else staffEvent('Contratação',p);s.cash-=p.wage;s.staff=s.staff.filter(x=>x.role!==p.role);s.staff.push({...p});log((existing?'Substituíste '+existing.name+' por ':'Contrataste ')+p.name+'. A primeira semana de salário ficou paga (€'+p.wage+').');save();render();}
 function advance(){
  if(s.current&&!s.current.done||s.pendingCall)return;
- if(s.week===52){finishSeasonReview();s.week=1;s.season++;s.age++;log('Nova época! Entraste no teu ano de idade '+s.age+'.');}else{s.week++;}
+ if(s.week===52){finishSeasonReview();s.week=1;s.season++;s.age++;s.lastSponsorOfferWeek=0;log('Nova época! Entraste no teu ano de idade '+s.age+'. Os patrocinadores voltam a avaliar a tua época.');}else{s.week++;}
  s.energy=Math.min(100,s.energy+22+(staffFor('Fisioterapeuta')?staffFor('Fisioterapeuta').quality*5:0)+(staffFor('Preparador físico')?staffFor('Preparador físico').quality*3:0));
  s.confidence=Math.max(20,Math.min(100,s.confidence+1+(staffFor('Psicólogo desportivo')?staffFor('Psicólogo desportivo').quality*2:0)));
  s.trained=false;s.trainingThisWeek='';s.current=null;
