@@ -196,7 +196,7 @@ function renderEvolution(){
  $('evolutionChart').innerHTML=svg;
 }
 function generateGameScore(playerWon){
- const winner=21+Math.floor(Math.random()*7)+(Math.random()<.12?2:0);
+ const winner=21+Math.floor(Math.random()*8)+(Math.random()<.12?2:0);
  const capped=Math.min(30,winner);
  const loserMax=capped===30?29:capped-2;
  const loserMin=Math.max(0,loserMax-7);
