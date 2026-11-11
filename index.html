@@ -197,24 +197,33 @@ function renderEvolution(){
  svg+='<div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:8px">'+keys.map((k,i)=>'<span style="font-size:12px;color:'+colors[i]+'">● '+attrs[k]+'</span>').join('')+'</div>';
  $('evolutionChart').innerHTML=svg;
 }
-function generateGameScore(playerWon){
- const winner=21+Math.floor(Math.random()*8)+(Math.random()<.12?2:0);
- const capped=Math.min(30,winner);
- const loser=capped===21?Math.floor(Math.random()*20):(capped===30?29:capped-2);
- return playerWon?capped+'-'+loser:loser+'-'+capped;
+function generateGameScore(playerWon,levelGap){
+ const gap=Math.abs(levelGap);
+ // Sets equilibrados podem ir a vantagens, mas isso deve ser uma exceção.
+ const advantage=Math.random()<Math.max(.012,.045-gap*.0012);
+ let winner,loser;
+ if(advantage){winner=22+Math.floor(Math.random()*5);loser=winner-2;}
+ else{
+  const margin=Math.max(2,Math.min(14,Math.round(3+gap*.24+(Math.random()*5-2))));
+  winner=21+Math.floor(Math.random()*3);
+  loser=Math.max(4,winner-margin);
+ }
+ return playerWon?winner+'-'+loser:loser+'-'+winner;
 }
 function playMatch(){
  const t=s.current;if(!t||t.done)return;const opp=t.opponents[t.round];if(!opp)return;
  const form=overall()+(s.energy-70)*.12+(s.confidence-50)*.08+(s.stats.mental-50)*.1;
  const own=form+staffMatchBonus()+(t.discipline==='Pares'?(s.partner-50)*.35:0);
- const won=Math.random()<1/(1+Math.exp(-(own-opp.rating)/13));
- const playerSets=won?2:(Math.random()<.48?1:0),opponentSets=won?(Math.random()<.48?1:0):2;
+ const gap=own-opp.rating;
+ // A diferença de nível pesa bastante, mas a variação de forma permite algumas surpresas.
  let pw=0,ow=0;const sets=[];
- while(pw<playerSets||ow<opponentSets){
-  const playerWonSet=pw<playerSets&&(ow>=opponentSets||Math.random()<.5);
-  sets.push(generateGameScore(playerWonSet));
+ while(pw<2&&ow<2){
+  const setSwing=(Math.random()+Math.random()+Math.random()-1.5)*7;
+  const playerWonSet=gap+setSwing>0;
+  sets.push(generateGameScore(playerWonSet,gap));
   if(playerWonSet)pw++;else ow++;
  }
+ const won=pw===2;
  const score=sets.join(', ');s.career.matches++;
  if(won){s.career.wins++;s.points+=t.tier*8;s.rank=Math.max(1,s.rank-t.tier*2);t.matchWins++;}
  else{s.points+=t.tier*3;s.rank+=t.tier*2;t.matchLosses++;}
