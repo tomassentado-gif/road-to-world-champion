@@ -216,19 +216,21 @@ function renderWorld(){
 }
 function tournamentSeeds(e){
  const range={Regional:[37,48],Nacional:[53,65],Internacional:[65,78],Continental:[74,86],Mundial:[80,92]}[e.level]||[48,62];
+ // Provas realizadas em Portugal sem indicação de serem internacionais têm apenas atletas portugueses.
+ const domesticOnly=e.country==='Portugal'&&!/international|internacional/i.test(e.name)&&!['Continental','Mundial'].includes(e.level);
  let pool=(s.worldPlayers||[]).filter(p=>p.active&&p.country!==s.country);
- if(e.level==='Nacional')pool=(s.worldPlayers||[]).filter(p=>p.active&&p.country===s.country);
- if(pool.length<7)pool=(s.worldPlayers||[]).filter(p=>p.active);
+ if(domesticOnly)pool=(s.worldPlayers||[]).filter(p=>p.active&&p.country==='Portugal');
+ else if(e.level==='Nacional')pool=(s.worldPlayers||[]).filter(p=>p.active&&p.country===s.country);
  const target=(range[0]+range[1])/2;
  pool.sort((a,b)=>b.points-a.points);
- // A seleção mistura ranking e adequação ao nível competitivo do torneio.
  const ranked=pool.slice(0,Math.min(40,pool.length));
  const candidates=ranked.sort((a,b)=>Math.abs(a.rating-target)-Math.abs(b.rating-target)).slice(0,Math.min(18,ranked.length));
  candidates.sort((a,b)=>b.points-a.points);
  const rivals=candidates.slice(0,7);
+ const localNames=['Diogo Martins','João Ferreira','Miguel Costa','Rafael Silva','Gonçalo Pereira','Tiago Santos','André Carvalho'];
  while(rivals.length<7){
   const i=rivals.length;
-  rivals.push({id:'guest-'+s.season+'-'+s.week+'-'+i,name:['Alex Morgan','David Lee','Nuno Reis','Sami Haddad','Pietro Conti','Leo Fischer','Mika Sato'][i],country:s.country,rating:Math.round(target),points:0,wins:0,losses:0,active:true});
+  rivals.push({id:'guest-'+s.season+'-'+s.week+'-'+i,name:domesticOnly?localNames[i]||('Jogador Português '+(i+1)):['Alex Morgan','David Lee','Nuno Reis','Sami Haddad','Pietro Conti','Leo Fischer','Mika Sato'][i],country:domesticOnly?'Portugal':s.country,rating:Math.round(target),points:0,wins:0,losses:0,active:true});
  }
  return rivals.map((p,i)=>({...p,seed:i+2,rating:Math.max(range[0]-8,Math.min(range[1]+8,Math.round(p.rating))),result:null,score:null}));
 }
