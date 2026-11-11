@@ -93,7 +93,7 @@ function save(){try{localStorage.setItem('rtwc-save',JSON.stringify(s));}catch(e
 function log(msg){s.news.push('S'+s.season+' · Sem. '+s.week+': '+msg);s.history.unshift(msg);s.news=s.news.slice(-40);s.history=s.history.slice(0,100);}
 function snapshotStats(){if(!Array.isArray(s.statsHistory))s.statsHistory=[];const p={season:s.season,week:s.week,stats:{...s.stats}};const i=s.statsHistory.findIndex(x=>x.season===s.season&&x.week===s.week);if(i>=0)s.statsHistory[i]=p;else s.statsHistory.push(p);if(s.statsHistory.length>300)s.statsHistory=s.statsHistory.slice(-300);}
 function staffEvent(action,p){s.staffHistory.unshift({season:s.season,week:s.week,action,name:p.name,role:p.role,country:p.country||''});}
-function finishTournament(t,won){if(t.logged)return;t.logged=true;const place=won?'Campeão':t.round===2?'Finalista':t.round===1?'Meias-finais':'Quartos de final';s.tournamentHistory.unshift({season:s.season,week:s.week,event:t.event,place,wins:t.matchWins||0,losses:t.matchLosses||0});if(won)s.career.titles++;else if(place==='Finalista')s.career.finals++;}
+function finishTournament(t,won){if(t.logged)return;t.logged=true;const place=won?'Campeão':t.round===2?'Finalista':t.round===1?'Meias-finais':'Quartos de final';s.tournamentHistory.unshift({season:s.season,week:s.week,event:t.event,place,wins:t.matchWins||0,losses:t.matchLosses||0});if(won)s.career.titles++;}
 function overall(){const a=s.stats;return Math.round((a.technique*1.2+a.footwork+a.speed+a.stamina+a.power+a.mental*1.1)/6.3);}
 function month(){return months[Math.min(11,Math.floor((s.week-1)/4.34))];}
 function staffFor(role){return s.staff.find(x=>x.role===role)||null;}
